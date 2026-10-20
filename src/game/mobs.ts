@@ -1,4 +1,14 @@
 import * as THREE from "three";
+import pigT from "@/assets/mobs/pig_temperate.png.asset.json";
+import cowT from "@/assets/mobs/cow_temperate.png.asset.json";
+import sheepT from "@/assets/mobs/sheep.png.asset.json";
+import woolT from "@/assets/mobs/sheep_wool.png.asset.json";
+import chickenT from "@/assets/mobs/chicken_temperate.png.asset.json";
+import zombieT from "@/assets/mobs/zombie.png.asset.json";
+import skeletonT from "@/assets/mobs/skeleton.png.asset.json";
+import creeperT from "@/assets/mobs/creeper.png.asset.json";
+import spiderT from "@/assets/mobs/spider.png.asset.json";
+import steveT from "@/assets/mobs/steve.png.asset.json";
 
 export type MobType = "pig" | "cow" | "sheep" | "chicken" | "zombie" | "skeleton" | "creeper" | "spider";
 
@@ -18,154 +28,163 @@ export const MOBS: Record<MobType, MobSpec> = {
   spider: { hp: 16, w: 0.65, h: 0.9, speed: 3.2, hostile: true, damage: 2, drops: [["string", 0, 2]] },
 };
 
+// Skins from the Faithful 32x pack (Java box-UV layout). Base sizes are in "model pixels" (texture is 2x).
+const SKINS = {
+  pig: [pigT.url, 64, 64], cow: [cowT.url, 64, 64], sheep: [sheepT.url, 64, 32], wool: [woolT.url, 64, 32],
+  chicken: [chickenT.url, 64, 32], zombie: [zombieT.url, 64, 64], skeleton: [skeletonT.url, 64, 32],
+  creeper: [creeperT.url, 64, 32], spider: [spiderT.url, 64, 32], steve: [steveT.url, 64, 64],
+} as const;
+type SkinKey = keyof typeof SKINS;
+
 const texCache = new Map<string, THREE.Texture>();
-function pixelTex(base: string, spots?: string, seed = 1) {
-  const k = base + (spots ?? "") + seed;
-  const hit = texCache.get(k);
-  if (hit) return hit;
-  const c = document.createElement("canvas");
-  c.width = c.height = 8;
-  const g = c.getContext("2d")!;
-  const col = new THREE.Color(base);
-  let s = seed * 9301;
-  const r = () => ((s = (s * 9301 + 49297) % 233280) / 233280);
-  for (let y = 0; y < 8; y++)
-    for (let x = 0; x < 8; x++) {
-      const v = 0.85 + r() * 0.25;
-      let cc = col.clone().multiplyScalar(v);
-      if (spots && r() < 0.28) cc = new THREE.Color(spots).multiplyScalar(v);
-      g.fillStyle = "#" + cc.getHexString();
-      g.fillRect(x, y, 1, 1);
-    }
-  const t = new THREE.CanvasTexture(c);
-  t.magFilter = THREE.NearestFilter;
-  t.minFilter = THREE.NearestFilter;
-  t.colorSpace = THREE.SRGBColorSpace;
-  texCache.set(k, t);
+const loader = new THREE.TextureLoader();
+export function skinTex(key: SkinKey) {
+  const url = SKINS[key][0];
+  let t = texCache.get(url);
+  if (!t) {
+    t = loader.load(url);
+    t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter;
+    t.colorSpace = THREE.SRGBColorSpace; t.generateMipmaps = false;
+    texCache.set(url, t);
+  }
   return t;
 }
 
-export interface MobModel { root: THREE.Group; legs: THREE.Object3D[]; arms: THREE.Object3D[]; mats: THREE.MeshLambertMaterial[]; head?: THREE.Object3D }
+const PX = 1 / 16;
+/** BoxGeometry whose faces are UV-mapped with Minecraft's box-UV layout. Front = +Z. */
+export function boxUV(w: number, h: number, d: number, u: number, v: number, tw: number, th: number, inflate = 0, scale = PX) {
+  const g = new THREE.BoxGeometry((w + inflate * 2) * scale, (h + inflate * 2) * scale, (d + inflate * 2) * scale);
+  const rects: [number, number, number, number][] = [
+    [u + d + w, v + d, d, h], // +x (entity left)
+    [u, v + d, d, h],         // -x (entity right)
+    [u + d, v, w, d],         // +y top
+    [u + d + w, v, w, d],     // -y bottom
+    [u + d, v + d, w, h],     // +z front
+    [u + 2 * d + w, v + d, w, h], // -z back
+  ];
+  const uv = g.attributes.uv as THREE.BufferAttribute;
+  rects.forEach(([x, y, rw, rh], f) => {
+    const u0 = x / tw, u1 = (x + rw) / tw, vt = 1 - y / th, vb = 1 - (y + rh) / th;
+    uv.setXY(f * 4 + 0, u0, vt); uv.setXY(f * 4 + 1, u1, vt);
+    uv.setXY(f * 4 + 2, u0, vb); uv.setXY(f * 4 + 3, u1, vb);
+  });
+  uv.needsUpdate = true;
+  return g;
+}
+
+export interface MobModel { root: THREE.Group; legs: THREE.Object3D[]; arms: THREE.Object3D[]; mats: THREE.MeshLambertMaterial[]; head?: THREE.Object3D; body?: THREE.Object3D }
 
 export function buildMob(type: MobType): MobModel {
   const root = new THREE.Group();
   const legs: THREE.Object3D[] = [];
   const arms: THREE.Object3D[] = [];
   const mats: THREE.MeshLambertMaterial[] = [];
-  const box = (w: number, h: number, d: number, color: string, x: number, y: number, z: number, spots?: string, parent: THREE.Object3D = root) => {
-    const m = new THREE.MeshLambertMaterial({ map: pixelTex(color, spots, Math.floor(w * 100 + h * 10)) });
-    mats.push(m);
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
-    mesh.position.set(x, y, z);
+  const matFor = (k: SkinKey) => {
+    const m = new THREE.MeshLambertMaterial({ map: skinTex(k), alphaTest: 0.4, side: k === "wool" ? THREE.FrontSide : THREE.DoubleSide });
+    mats.push(m); return m;
+  };
+  const main = matFor(type);
+  const [, tw, th] = SKINS[type];
+  /** add cube: size w,h,d at uv(u,v); center (x,y,z) in px relative to parent. */
+  const cube = (parent: THREE.Object3D, w: number, h: number, d: number, u: number, v: number, x: number, y: number, z: number, opts: { rotX?: number; inflate?: number; mat?: THREE.Material; tw?: number; th?: number } = {}) => {
+    const mesh = new THREE.Mesh(boxUV(w, h, d, u, v, opts.tw ?? tw, opts.th ?? th, opts.inflate ?? 0), opts.mat ?? main);
+    mesh.position.set(x * PX, y * PX, z * PX);
+    if (opts.rotX) mesh.rotation.x = opts.rotX;
     mesh.castShadow = true;
     parent.add(mesh);
     return mesh;
   };
-  const leg = (w: number, h: number, color: string, x: number, top: number, z: number) => {
-    const piv = new THREE.Group();
-    piv.position.set(x, top, z);
-    box(w, h, w, color, 0, -h / 2, 0, undefined, piv);
-    root.add(piv);
-    legs.push(piv);
+  const pivot = (x: number, y: number, z: number, list?: THREE.Object3D[]) => {
+    const g = new THREE.Group(); g.position.set(x * PX, y * PX, z * PX); root.add(g); list?.push(g); return g;
   };
-  const eyes = (parent: THREE.Object3D, y: number, z: number, sep: number, color = "#111") => {
-    box(0.1, 0.1, 0.02, "#fff", -sep, y, z, undefined, parent);
-    box(0.1, 0.1, 0.02, "#fff", sep, y, z, undefined, parent);
-    box(0.05, 0.1, 0.03, color, -sep + 0.025, y, z + 0.005, undefined, parent);
-    box(0.05, 0.1, 0.03, color, sep - 0.025, y, z + 0.005, undefined, parent);
-  };
+  const R = Math.PI / 2;
   let head: THREE.Object3D | undefined;
+  let body: THREE.Object3D | undefined;
   switch (type) {
     case "pig": {
-      box(0.6, 0.55, 1.0, "#f0a3a8", 0, 0.6, 0);
-      const h = new THREE.Group(); h.position.set(0, 0.75, 0.6); root.add(h); head = h;
-      box(0.5, 0.5, 0.45, "#f0a3a8", 0, 0, 0, undefined, h);
-      box(0.25, 0.15, 0.06, "#e57f8a", 0, -0.08, 0.25, undefined, h);
-      eyes(h, 0.08, 0.23, 0.15);
-      for (const [x, z] of [[-0.18, 0.35], [0.18, 0.35], [-0.18, -0.35], [0.18, -0.35]]) leg(0.2, 0.35, "#e68f96", x, 0.35, z);
+      body = cube(root, 10, 16, 8, 28, 8, 0, 13, 0, { rotX: R });
+      head = pivot(0, 12, 7);
+      cube(head, 8, 8, 8, 0, 0, 0, 0, 4);
+      cube(head, 4, 3, 1, 16, 16, 0, -1, 8.5);
+      for (const [x, z] of [[-3, 5], [3, 5], [-3, -7], [3, -7]]) cube(pivot(x, 6, z, legs), 4, 6, 4, 0, 16, 0, -3, 0);
       break;
     }
     case "cow": {
-      box(0.75, 0.7, 1.15, "#4a3424", 0, 1.0, 0, "#e8e2d6");
-      const h = new THREE.Group(); h.position.set(0, 1.25, 0.7); root.add(h); head = h;
-      box(0.5, 0.5, 0.35, "#4a3424", 0, 0, 0, "#e8e2d6", h);
-      box(0.3, 0.18, 0.05, "#d9a7a0", 0, -0.13, 0.19, undefined, h);
-      box(0.08, 0.15, 0.08, "#ddd", -0.25, 0.27, 0, undefined, h);
-      box(0.08, 0.15, 0.08, "#ddd", 0.25, 0.27, 0, undefined, h);
-      eyes(h, 0.08, 0.18, 0.15);
-      for (const [x, z] of [[-0.22, 0.4], [0.22, 0.4], [-0.22, -0.4], [0.22, -0.4]]) leg(0.24, 0.65, "#3a281b", x, 0.65, z);
+      body = cube(root, 12, 18, 10, 18, 4, 0, 19, 0, { rotX: R });
+      head = pivot(0, 20, 8);
+      cube(head, 8, 8, 6, 0, 0, 0, 0, 3);
+      cube(head, 1, 3, 1, 22, 0, -4.5, 4.5, 2);
+      cube(head, 1, 3, 1, 22, 0, 4.5, 4.5, 2);
+      for (const [x, z] of [[-4, 6], [4, 6], [-4, -7], [4, -7]]) cube(pivot(x, 12, z, legs), 4, 12, 4, 0, 16, 0, -6, 0);
       break;
     }
     case "sheep": {
-      box(0.8, 0.7, 1.1, "#f2f0ea", 0, 0.95, 0, "#dedbd2");
-      const h = new THREE.Group(); h.position.set(0, 1.15, 0.65); root.add(h); head = h;
-      box(0.42, 0.42, 0.4, "#c9b8a6", 0, 0, 0, undefined, h);
-      box(0.48, 0.15, 0.3, "#f2f0ea", 0, 0.2, -0.05, undefined, h);
-      eyes(h, 0.05, 0.21, 0.12);
-      for (const [x, z] of [[-0.22, 0.35], [0.22, 0.35], [-0.22, -0.35], [0.22, -0.35]]) leg(0.2, 0.6, "#c9b8a6", x, 0.6, z);
+      const wool = matFor("wool");
+      body = cube(root, 8, 16, 6, 28, 8, 0, 18, 0, { rotX: R });
+      cube(root, 8, 16, 6, 28, 8, 0, 18, 0, { rotX: R, inflate: 1.75, mat: wool });
+      head = pivot(0, 20, 7);
+      cube(head, 6, 6, 8, 0, 0, 0, 0, 3);
+      cube(head, 6, 6, 6, 0, 0, 0, 0.5, 2, { inflate: 0.6, mat: wool });
+      for (const [x, z] of [[-3, 5], [3, 5], [-3, -6], [3, -6]]) {
+        const p = pivot(x, 12, z, legs);
+        cube(p, 4, 12, 4, 0, 16, 0, -6, 0);
+        cube(p, 4, 6, 4, 0, 16, 0, -3, 0, { inflate: 0.5, mat: wool });
+      }
       break;
     }
     case "chicken": {
-      box(0.4, 0.4, 0.5, "#fafafa", 0, 0.45, 0);
-      const h = new THREE.Group(); h.position.set(0, 0.8, 0.25); root.add(h); head = h;
-      box(0.25, 0.35, 0.2, "#fafafa", 0, 0, 0, undefined, h);
-      box(0.25, 0.1, 0.15, "#f2a520", 0, 0, 0.15, undefined, h);
-      box(0.1, 0.12, 0.08, "#d42020", 0, -0.12, 0.13, undefined, h);
-      box(0.06, 0.25, 0.4, "#eeeeee", -0.23, 0.48, 0);
-      box(0.06, 0.25, 0.4, "#eeeeee", 0.23, 0.48, 0);
-      leg(0.06, 0.25, "#f2a520", -0.1, 0.25, 0);
-      leg(0.06, 0.25, "#f2a520", 0.1, 0.25, 0);
+      body = cube(root, 6, 8, 6, 0, 9, 0, 8, 0, { rotX: R });
+      head = pivot(0, 11, 3);
+      cube(head, 4, 6, 3, 0, 0, 0, 2, 1);
+      cube(head, 4, 2, 2, 14, 0, 0, 2, 3.5);
+      cube(head, 2, 2, 2, 14, 4, 0, 0, 3);
+      for (const s of [-1, 1]) cube(pivot(s * 3.5, 11, 0, arms), 1, 4, 6, 24, 13, 0, -2, 0);
+      for (const x of [-1.5, 1.5]) cube(pivot(x, 5, 1, legs), 3, 5, 3, 26, 0, 0, -2.5, 0);
       break;
     }
     case "zombie":
     case "skeleton": {
-      const z = type === "zombie";
-      const skin = z ? "#5f9b4f" : "#d8d8d0";
-      const shirt = z ? "#2a9da8" : "#c4c4bc";
-      const pants = z ? "#3b3f9a" : "#b4b4ac";
-      const lw = z ? 0.25 : 0.12;
-      box(0.5, 0.75, 0.25, shirt, 0, 1.125, 0);
-      const h = new THREE.Group(); h.position.set(0, 1.75, 0); root.add(h); head = h;
-      box(0.5, 0.5, 0.5, skin, 0, 0, 0, undefined, h);
-      box(0.1, 0.08, 0.02, "#111", -0.12, 0.02, 0.255, undefined, h);
-      box(0.1, 0.08, 0.02, "#111", 0.12, 0.02, 0.255, undefined, h);
-      leg(lw, 0.75, pants, -0.125, 0.75, 0);
-      leg(lw, 0.75, pants, 0.125, 0.75, 0);
-      for (const x of [-0.375, 0.375]) {
-        const piv = new THREE.Group(); piv.position.set(x, 1.45, 0);
-        box(lw, 0.7, lw, skin, 0, -0.3, 0, undefined, piv);
-        piv.rotation.x = -Math.PI / 2.2;
-        root.add(piv); arms.push(piv);
+      const thin = type === "skeleton";
+      const lw = thin ? 2 : 4;
+      body = cube(root, 8, 12, 4, 16, 16, 0, 18, 0);
+      head = pivot(0, 24, 0);
+      cube(head, 8, 8, 8, 0, 0, 0, 4, 0);
+      for (const s of [-1, 1]) {
+        const a = pivot(s * (4 + lw / 2), 22, 0, arms);
+        cube(a, lw, 12, lw, 40, 16, 0, -4, 0);
       }
+      for (const s of [-1, 1]) cube(pivot(s * 2, 12, 0, legs), lw, 12, lw, 0, 16, 0, -6, 0);
       break;
     }
     case "creeper": {
-      box(0.5, 0.8, 0.28, "#4fae3e", 0, 0.75, 0, "#7ad06a");
-      const h = new THREE.Group(); h.position.set(0, 1.4, 0); root.add(h); head = h;
-      box(0.5, 0.5, 0.5, "#4fae3e", 0, 0, 0, "#7ad06a", h);
-      box(0.12, 0.12, 0.02, "#111", -0.12, 0.08, 0.255, undefined, h);
-      box(0.12, 0.12, 0.02, "#111", 0.12, 0.08, 0.255, undefined, h);
-      box(0.12, 0.2, 0.02, "#111", 0, -0.08, 0.255, undefined, h);
-      for (const [x, zz] of [[-0.13, 0.22], [0.13, 0.22], [-0.13, -0.22], [0.13, -0.22]]) leg(0.22, 0.35, "#3e8f30", x, 0.35, zz);
+      body = cube(root, 8, 12, 4, 16, 16, 0, 12, 0);
+      head = pivot(0, 18, 0);
+      cube(head, 8, 8, 8, 0, 0, 0, 4, 0);
+      for (const [x, z] of [[-2, 4], [2, 4], [-2, -4], [2, -4]]) cube(pivot(x, 6, z, legs), 4, 6, 4, 0, 16, 0, -3, 0);
       break;
     }
     case "spider": {
-      box(0.9, 0.55, 0.8, "#2e2722", 0, 0.55, -0.35, "#3c332c");
-      box(0.45, 0.4, 0.4, "#2e2722", 0, 0.55, 0.15);
-      const h = new THREE.Group(); h.position.set(0, 0.55, 0.5); root.add(h); head = h;
-      box(0.5, 0.45, 0.4, "#2e2722", 0, 0, 0, undefined, h);
-      box(0.08, 0.08, 0.02, "#d01010", -0.12, 0.08, 0.205, undefined, h);
-      box(0.08, 0.08, 0.02, "#d01010", 0.12, 0.08, 0.205, undefined, h);
+      cube(root, 6, 6, 6, 0, 0, 0, 9, 0);
+      body = cube(root, 10, 8, 12, 0, 12, 0, 9, -9);
+      head = pivot(0, 9, 3);
+      cube(head, 8, 8, 8, 32, 4, 0, 0, 4);
       for (let i = 0; i < 8; i++) {
         const side = i < 4 ? -1 : 1;
-        const piv = new THREE.Group();
-        piv.position.set(side * 0.2, 0.6, 0.3 - (i % 4) * 0.18);
-        const m = box(0.9, 0.08, 0.08, "#2e2722", side * 0.45, 0, 0, undefined, piv);
-        m.rotation.z = side * -0.5;
-        root.add(piv); legs.push(piv);
+        const p = pivot(side * 3, 9, 2 - (i % 4) * 2, legs);
+        const m = cube(p, 16, 2, 2, 18, 0, side * 8, 0, 0);
+        p.rotation.z = side * 0.55;
+        void m;
       }
       break;
     }
   }
-  return { root, legs, arms, mats, head };
+  return { root, legs, arms, mats, head, body };
+}
+
+/** First-person Steve arm (skin from the pack), pointing forward. */
+export function buildArm() {
+  const mat = new THREE.MeshLambertMaterial({ map: skinTex("steve") });
+  const m = new THREE.Mesh(boxUV(4, 12, 4, 40, 16, 64, 64, 0, 0.058), mat);
+  m.rotation.x = -Math.PI / 2;
+  return m;
 }
