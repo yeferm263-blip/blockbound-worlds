@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Engine, type GameState, type Slot } from "@/game/engine";
 import { BLOCKS, ITEMS, ATLAS_COLS, ATLAS_ROWS, type Recipe } from "@/game/blocks";
 import { itemIconURL } from "@/game/icons";
+import { AdminPanel, Chat, ChatFeed } from "./AdminTools";
 
 function Face({ tile, cls }: { tile: number; cls: string }) {
   const col = tile % ATLAS_COLS, row = Math.floor(tile / ATLAS_COLS);
@@ -64,6 +65,8 @@ export function Game() {
   const [engine, setEngine] = useState<Engine | null>(null);
   const [s, setS] = useState<GameState | null>(null);
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const [chat, setChat] = useState<{ m: string; t: number }[]>([]);
+  const addLog = (m: string) => setChat((c) => [...c.slice(-50), { m, t: Date.now() }]);
 
   useEffect(() => {
     const e = new Engine(ref.current!);
@@ -102,6 +105,8 @@ export function Game() {
           </div>
 
           {s.ui === "inventory" && engine && <InventoryUI s={s} engine={engine} />}
+          {s.ui === "chat" && engine ? <Chat engine={engine} log={chat.map((c) => c.m)} onLog={addLog} /> : <ChatFeed log={chat} />}
+          {s.ui === "admin" && engine && <AdminPanel engine={engine} onLog={addLog} />}
           {s.cursor && (
             <div className="pointer-events-none fixed z-50" style={{ left: mouse.x - 22, top: mouse.y - 22 }}>
               <SlotView slot={s.cursor} />
@@ -116,6 +121,7 @@ export function Game() {
                 <p>WASD mover · Espacio saltar/nadar · Ctrl correr · Shift agacharse</p>
                 <p>Clic izq. (mantener) picar / talar / atacar · Clic der. colocar / comer / usar mesa y horno</p>
                 <p>E inventario y crafteo · 1-9 / rueda elegir · Q soltar objeto</p>
+                <p>T chat · /admin cambiar texturas de bloques</p>
                 <p className="opacity-70">Texturas: Kenney Voxel Pack (CC0, dominio público)</p>
               </div>
             </div>
