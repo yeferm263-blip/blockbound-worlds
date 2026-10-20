@@ -1,14 +1,16 @@
-# Welcome to your Lovable project
+# Blockbound Worlds
+
+Crea un juego parecido a minecraft con todas la jugabilidad que tiene minecraft, las mismas funciones, para las texturas no quiero que cree unas quiero que busques por la red de internet las mas parecidas a minecraft pero que no tengna derecho de autor, priorizaremos la vista del juego primero, tambien agrega a los mobs, los enemigos, animales, bloques, acciones como que los bloques al picarlos, talarlos se dropean lo mismo en el inventario que se mire como 3d como en minecraft basicamente no 2d
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/a5a01462-0a59-4dbe-8afc-ee82b0f883f9).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +22,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
