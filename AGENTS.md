@@ -8,3 +8,4 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- Game engine is vanilla three.js in src/game (imperative chunk meshing for performance); React only renders HUD/inventory in src/components/Game.tsx. Textures come from the CC0 Kenney atlas in public/textures.
