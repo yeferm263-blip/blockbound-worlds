@@ -2,7 +2,21 @@ import { buildAtlas } from "./textures";
 import * as THREE from "three";
 import { B, BLOCKS, ITEMS, RECIPES, breakInfo, blockDrop, isSolid, type Recipe } from "./blocks";
 import { World, CS, CH, tileUV } from "./world";
-import { MOBS, buildMob, type MobModel, type MobType } from "./mobs";
+import { MOBS, buildMob, buildArm, type MobModel, type MobType } from "./mobs";
+import { sfx, startMusic, stopAudio, toggleMusic, type Material } from "./audio";
+import faithfulPng from "@/assets/faithful.png.asset.json";
+import faithful from "./packs/faithful.json";
+
+const FA = faithful as { width: number; height: number; rects: Record<string, number[]> };
+function blockMat(id: number): Material {
+  if (id === B.LOG || id === B.BIRCH_LOG || id === B.PLANKS || id === B.TABLE) return "wood";
+  if (id === B.DIRT || id === B.GRAVEL) return "dirt";
+  if (id === B.GRASS || id === B.WOOL || id === B.SNOW) return "grass";
+  if (id === B.SAND) return "sand";
+  if (id === B.GLASS || id === B.ICE) return "glass";
+  if (id === B.LEAVES || id === B.CACTUS) return "leaves";
+  return "stone";
+}
 import { itemCanvas } from "./icons";
 import { hash } from "./noise";
 
@@ -71,6 +85,7 @@ export class Engine {
   arrows: Arrow[] = [];
   breakTarget: string | null = null;
   breakProgress = 0;
+  digT = 0;
   attackCd = 0;
   placeCd = 0;
   time = 0.3;
@@ -105,8 +120,11 @@ export class Engine {
     this.scene.fog = new THREE.Fog(0x9ccbff, RENDER * CS * 0.55, RENDER * CS * 0.95);
 
     // sun & moon (square, like the classic look)
-    this.sunMesh = new THREE.Mesh(new THREE.PlaneGeometry(22, 22), new THREE.MeshBasicMaterial({ color: 0xfff3b0, fog: false }));
-    this.moonMesh = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), new THREE.MeshBasicMaterial({ color: 0xdfe6f2, fog: false }));
+    this.faTex = new THREE.TextureLoader().load(faithfulPng.url);
+    this.faTex.magFilter = THREE.NearestFilter; this.faTex.minFilter = THREE.NearestFilter; this.faTex.colorSpace = THREE.SRGBColorSpace; this.faTex.generateMipmaps = false;
+    const sky = (key: string) => new THREE.MeshBasicMaterial({ map: this.faSub(key), fog: false, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    this.sunMesh = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), sky("environment/celestial/sun.png"));
+    this.moonMesh = new THREE.Mesh(new THREE.PlaneGeometry(24, 24), sky("environment/celestial/moon/full_moon.png"));
     this.scene.add(this.sunMesh, this.moonMesh);
     // clouds
     const cmat = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, emissive: 0x777777 });
@@ -121,7 +139,7 @@ export class Engine {
 
     // selection outline + crack overlay
     this.outline = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.004, 1.004, 1.004)), new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.6 }));
-    this.crack = new THREE.Mesh(new THREE.BoxGeometry(1.01, 1.01, 1.01), new THREE.MeshBasicMaterial({ map: this.crackTexture(), transparent: true, opacity: 0, depthWrite: false }));
+    this.crack = new THREE.Mesh(new THREE.BoxGeometry(1.01, 1.01, 1.01), new THREE.MeshBasicMaterial({ map: this.faSub("block/destroy_stage_0.png"), transparent: true, opacity: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, color: 0x999999, blending: THREE.MultiplyBlending, premultipliedAlpha: true }));
     this.scene.add(this.outline, this.crack);
 
     // hand
@@ -148,6 +166,22 @@ export class Engine {
     this.loop();
   }
 
+  faTex!: THREE.Texture;
+  moonPhase = -1;
+  stepT = 0;
+  /** Texture showing one sprite from the Faithful atlas. */
+  faSub(key: string) {
+    const t = this.faTex.clone();
+    this.faSetRect(t, key);
+    return t;
+  }
+  faSetRect(t: THREE.Texture, key: string) {
+    const r = FA.rects[key]; if (!r) return;
+    const [x, y, w, h] = r;
+    t.repeat.set(w / FA.width, h / FA.height);
+    t.offset.set(x / FA.width, 1 - (y + h) / FA.height);
+    t.needsUpdate = true;
+  }
   crackTexture() {
     const c = document.createElement("canvas");
     c.width = c.height = 16;
@@ -173,6 +207,7 @@ export class Engine {
       this.keys.add(e.code);
       if (e.code.startsWith("Digit")) { const n = Number(e.code.slice(5)) - 1; if (n >= 0 && n < 9) this.select(n); }
       if (e.code === "KeyQ") this.dropHeld();
+      if (e.code === "KeyM") this.toast(toggleMusic() ? "Música: activada" : "Música: desactivada");
     });
     this.on(window, "keyup", (e: KeyboardEvent) => this.keys.delete(e.code));
     this.on(this.canvas, "mousedown", (e: MouseEvent) => {
@@ -190,6 +225,7 @@ export class Engine {
     this.on(window, "wheel", (e: WheelEvent) => { if (this.state.locked) this.select((this.state.selected + (e.deltaY > 0 ? 1 : 8)) % 9); });
     this.on(document, "pointerlockchange", () => {
       this.state.locked = document.pointerLockElement === this.canvas;
+      if (this.state.locked) startMusic();
       if (!this.state.locked) { this.keys.clear(); this.mouseL = false; }
       this.emit();
     });
@@ -209,6 +245,7 @@ export class Engine {
   dispose() {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
+    stopAudio();
     for (const [t, ev, fn] of this.handlers) t.removeEventListener(ev, fn);
     if (document.pointerLockElement) document.exitPointerLock();
     this.renderer.dispose();
@@ -378,12 +415,12 @@ export class Engine {
       const dmg = it?.damage ?? 1;
       this.damageMob(hitM.mob, dmg, this.look());
       this.attackCd = 0.45; this.handSwing = 1;
-    }
+    } else if (this.attackCd <= 0 && this.handSwing <= 0) { sfx.swing(); this.handSwing = 1; this.attackCd = 0.3; }
   }
 
   damageMob(m: Mob, dmg: number, dir: THREE.Vector3) {
     if (m.hurt > 0.2) return;
-    m.hp -= dmg; m.hurt = 0.5;
+    m.hp -= dmg; m.hurt = 0.5; sfx.hit(); sfx.mob(m.type);
     m.vel.x += dir.x * 7; m.vel.z += dir.z * 7; m.vel.y = 5;
     if (!MOBS[m.type].hostile) { m.wander = 4; m.dir.set(dir.x, dir.z).normalize(); }
     if (m.hp <= 0) this.killMob(m, true);
@@ -411,7 +448,7 @@ export class Engine {
     if (it?.food) {
       if (this.state.food >= 20) return;
       this.state.food = Math.min(20, this.state.food + it.food);
-      this.consumeHeld(); this.handSwing = 1; this.toast("¡Ñam! +" + it.food);
+      sfx.eat(); this.consumeHeld(); this.handSwing = 1; this.toast("¡Ñam! +" + it.food);
       return;
     }
     if (!hit || !it?.block) return;
@@ -423,10 +460,12 @@ export class Engine {
     const overlap = (bx: THREE.Vector3, w: number, h: number) => p.x + 1 > bx.x - w && p.x < bx.x + w && p.y + 1 > bx.y && p.y < bx.y + h && p.z + 1 > bx.z - w && p.z < bx.z + w;
     if (overlap(pl, 0.3, 1.8) || this.mobs.some((m) => overlap(m.pos, m.w, m.h))) return;
     this.world.set(p.x, p.y, p.z, it.block);
+    sfx.place(blockMat(it.block));
     this.consumeHeld(); this.handSwing = 1;
   }
 
   breakBlock(x: number, y: number, z: number, id: number, drops: boolean) {
+    if (drops) sfx.brk(blockMat(id));
     this.world.set(x, y, z, B.AIR);
     if (drops) {
       let d = blockDrop(id);
@@ -488,7 +527,7 @@ export class Engine {
 
   hurtPlayer(n: number, from?: THREE.Vector3) {
     if (this.state.dead || n <= 0) return;
-    this.state.hp = Math.max(0, this.state.hp - n);
+    this.state.hp = Math.max(0, this.state.hp - n); sfx.hurt();
     this.state.hurt = 1;
     if (from) { const d = this.player.pos.clone().sub(from).setY(0).normalize(); this.player.vel.x += d.x * 8; this.player.vel.z += d.z * 8; this.player.vel.y = 5; }
     if (this.state.hp <= 0) this.die();
@@ -510,6 +549,7 @@ export class Engine {
   }
 
   explode(c: THREE.Vector3, r: number) {
+    sfx.explode();
     for (let x = -r; x <= r; x++) for (let y = -r; y <= r; y++) for (let z = -r; z <= r; z++) {
       if (x * x + y * y + z * z > r * r) continue;
       const bx = Math.floor(c.x) + x, by = Math.floor(c.y) + y, bz = Math.floor(c.z) + z;
@@ -603,12 +643,17 @@ export class Engine {
         if (key !== this.breakTarget) { this.breakTarget = key; this.breakProgress = 0; }
         const info = breakInfo(hit.id, this.held());
         this.breakProgress += dt / info.time;
+        this.digT = (this.digT ?? 0) - dt; if (this.digT <= 0) { this.digT = 0.22; sfx.dig(blockMat(hit.id)); }
         this.handSwing = Math.max(this.handSwing, 0.6);
         if (this.breakProgress >= 1) { this.breakBlock(hit.x, hit.y, hit.z, hit.id, info.drops); this.breakProgress = 0; this.breakTarget = null; this.hungerT += 0.3; }
       } else this.breakProgress = 0;
       this.crack.visible = this.breakProgress > 0;
       this.crack.position.copy(this.outline.position);
-      (this.crack.material as THREE.MeshBasicMaterial).opacity = this.breakProgress * 0.9;
+      if (this.breakProgress > 0) {
+        const stage = Math.min(9, Math.floor(this.breakProgress * 10));
+        const cm = this.crack.material as THREE.MeshBasicMaterial;
+        if (cm.userData.stage !== stage) { cm.userData.stage = stage; this.faSetRect(cm.map!, `block/destroy_stage_${stage}.png`); }
+      }
       const name = BLOCKS[hit.id]?.name ?? null;
       if (st.target !== name) { st.target = name; this.emit(); }
     } else {
@@ -638,6 +683,16 @@ export class Engine {
     this.sun.position.copy(p.pos).addScaledVector(sdir, 50); this.sun.target.position.copy(p.pos);
     this.sunMesh.position.copy(this.camera.position).addScaledVector(sdir, 180); this.sunMesh.lookAt(this.camera.position);
     this.moonMesh.position.copy(this.camera.position).addScaledVector(sdir, -180); this.moonMesh.lookAt(this.camera.position);
+    const phase = this.dayCount % 8;
+    if (phase !== this.moonPhase) {
+      this.moonPhase = phase;
+      const names = ["full_moon", "waning_gibbous", "third_quarter", "waning_crescent", "new_moon", "waxing_crescent", "first_quarter", "waxing_gibbous"];
+      this.faSetRect((this.moonMesh.material as THREE.MeshBasicMaterial).map!, `environment/celestial/moon/${names[phase]}.png`);
+    }
+    if (playing && p.onGround && Math.hypot(p.vel.x, p.vel.z) > 1) {
+      this.stepT -= dt * Math.hypot(p.vel.x, p.vel.z);
+      if (this.stepT <= 0) { this.stepT = 1.6; const under = this.world.get(Math.floor(p.pos.x), Math.floor(p.pos.y - 0.1), Math.floor(p.pos.z)); if (under) sfx.step(blockMat(under)); }
+    }
     this.clouds.position.x += dt * 1.2;
     for (const c of this.clouds.children) {
       const wx = c.position.x + this.clouds.position.x - p.pos.x, wz = c.position.z - p.pos.z;
@@ -671,8 +726,8 @@ export class Engine {
         else m.rotation.set(0, -0.5, 0.1);
         this.hand.add(m);
       } else {
-        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.7), new THREE.MeshLambertMaterial({ color: 0xd9a06f }));
-        arm.position.set(0.05, -0.05, 0.1); arm.rotation.set(0.2, 0.1, 0);
+        const arm = buildArm();
+        arm.position.set(0.05, -0.05, 0.1); arm.rotation.set(-Math.PI / 2 + 0.2, 0.1, 0);
         this.hand.add(arm);
       }
     }
@@ -808,7 +863,14 @@ export class Engine {
         if (m.type === "spider") l.rotation.y = (i % 2 ? sw : -sw) * 0.5;
         else l.rotation.x = i % 2 ? sw : -sw;
       });
-      m.model.arms.forEach((a, i) => (a.rotation.x = -Math.PI / 2.2 + (i ? sw : -sw) * 0.2));
+      const humanoid = m.type === "zombie" || m.type === "skeleton";
+      if (m.type === "chicken") m.model.arms.forEach((a, i) => (a.rotation.z = (i ? -1 : 1) * (m.onGround ? Math.abs(sw) * 0.3 : 0.6 + Math.sin(this.time * 4000) * 0.6)));
+      else m.model.arms.forEach((a, i) => (a.rotation.x = humanoid ? -Math.PI / 2.2 + (i ? sw : -sw) * 0.2 + Math.sin(m.walk * 0.5 + i) * 0.05 : 0));
+      // body bob + breathing, hurt tilt (Actions & Stuff style)
+      if (m.model.body) m.model.body.position.y = (m.model.body.userData.y0 ??= m.model.body.position.y) + Math.abs(sw) * 0.02 + Math.sin(this.time * 900 + m.yaw) * 0.006;
+      m.model.root.rotation.z = m.hurt > 0 ? Math.sin(m.hurt * 20) * 0.12 : 0;
+      if (!spec.hostile && m.model.head) m.model.head.rotation.x = sp < 0.2 ? Math.sin(this.time * 300 + m.yaw) * 0.25 + 0.2 : 0;
+      if (Math.random() < dt * 0.04 && dist < 16) sfx.mob(m.type);
       if (m.model.head && spec.hostile && dist < 18) m.model.head.rotation.x = -Math.atan2(toP.y - 1, Math.hypot(toP.x, toP.z)) * 0.5;
       m.model.root.position.copy(m.pos);
       m.model.root.rotation.y = m.yaw;
