@@ -678,7 +678,7 @@ export class Engine {
     }
     if (this.handSwing > 0) this.handSwing = Math.max(0, this.handSwing - dt * 3.2);
     // Actions & Stuff style: sway lags camera rotation, walk bob, arc slash with ease-out.
-    const yaw = this.camera.rotation.y, pitch = this.camera.rotation.x;
+    const yaw = this.yaw, pitch = this.pitch;
     const dyaw = Math.atan2(Math.sin(yaw - this.lastYaw), Math.cos(yaw - this.lastYaw));
     this.lastYaw = yaw;
     const k = 1 - Math.exp(-10 * dt);

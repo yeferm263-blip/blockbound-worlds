@@ -1,4 +1,4 @@
-// Block + item definitions. Texture indices refer to public/textures/atlas.png (8x4 grid, CC0 Kenney Voxel Pack).
+// Block + item definitions. Texture indices refer to public/textures/atlas.png (8x4 grid of 32px tiles, built from the user-supplied Faithful 32x pack; unused slots keep Kenney CC0 tiles).
 export const ATLAS_COLS = 8;
 export const ATLAS_ROWS = 16; // rows 0-3 Kenney atlas, rows 4+ custom tiles (see textures.ts)
 
