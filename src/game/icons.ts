@@ -28,7 +28,7 @@ export function itemCanvas(id: string): HTMLCanvasElement {
   const c = document.createElement("canvas");
   c.width = c.height = 32;
   const g = c.getContext("2d")!;
-  const pat = P[def?.icon ?? "gem"] ?? P.gem;
+  const pat = P[def?.icon ?? "gem"] ?? P["gem"];
   const col = def?.color ?? "#888";
   const full = col.length === 4 ? "#" + col.slice(1).split("").map((x) => x + x).join("") : col;
   for (let y = 0; y < 8; y++)
