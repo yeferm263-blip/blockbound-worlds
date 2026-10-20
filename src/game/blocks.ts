@@ -1,6 +1,6 @@
 // Block + item definitions. Texture indices refer to public/textures/atlas.png (8x4 grid, CC0 Kenney Voxel Pack).
 export const ATLAS_COLS = 8;
-export const ATLAS_ROWS = 4;
+export const ATLAS_ROWS = 16; // rows 0-3 Kenney atlas, rows 4+ custom tiles (see textures.ts)
 
 export const B = {
   AIR: 0, GRASS: 1, DIRT: 2, STONE: 3, COBBLE: 4, LOG: 5, LEAVES: 6, PLANKS: 7, SAND: 8,

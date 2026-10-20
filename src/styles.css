@@ -182,6 +182,9 @@
   .mc-hotbar .mc-slot-active { box-shadow: 0 0 0 3px var(--mc-text), inset 0 0 0 1px var(--mc-slot-dark); z-index: 1; }
   .mc-count { position: absolute; right: 2px; bottom: -2px; font-size: 1.35rem; color: var(--mc-text); text-shadow: 2px 2px 0 var(--mc-shadow); pointer-events: none; }
   .mc-panel { padding: 1rem; background: var(--mc-panel); color: var(--mc-text-dark); border: 3px solid var(--mc-slot-dark); box-shadow: inset 3px 3px 0 var(--mc-panel-light), inset -3px -3px 0 var(--mc-panel-dark); font-size: 1.2rem; }
+  .mc-chat-line { padding: 0.1rem 0.4rem; font-size: 1.1rem; color: var(--mc-text); background: color-mix(in oklab, var(--mc-shadow) 55%, transparent); text-shadow: 1px 1px 0 var(--mc-shadow); width: fit-content; }
+  .mc-chat-input { width: 100%; padding: 0.3rem 0.5rem; font-size: 1.2rem; color: var(--mc-text); background: color-mix(in oklab, var(--mc-shadow) 70%, transparent); outline: none; border: 0; }
+  .mc-preview { width: 220px; height: 220px; background: var(--mc-slot); border: 3px solid var(--mc-slot-dark); cursor: grab; }
   .mc-panel-title { font-size: 1.5rem; margin-bottom: 0.4rem; }
   .mc-grid { display: grid; grid-template-columns: repeat(9, 44px); gap: 2px; }
   .mc-recipes { display: flex; flex-direction: column; gap: 4px; max-height: 340px; overflow-y: auto; padding-right: 4px; }
@@ -193,7 +196,7 @@
   /* 3D isometric block icons */
   .mc-cube-wrap { width: 30px; height: 30px; perspective: none; pointer-events: none; }
   .mc-cube { position: relative; width: 20px; height: 20px; margin: 5px; transform-style: preserve-3d; transform: rotateX(-30deg) rotateY(45deg); }
-  .mc-face { position: absolute; width: 20px; height: 20px; background-image: url(/textures/atlas.png); background-size: 800% 400%; image-rendering: pixelated; backface-visibility: hidden; }
+  .mc-face { position: absolute; width: 20px; height: 20px; background-image: var(--atlas-url, url(/textures/atlas.png)); background-size: 800% 1600%; image-rendering: pixelated; backface-visibility: hidden; }
   .mc-top { transform: rotateX(90deg) translateZ(10px); }
   .mc-front { transform: translateZ(10px); filter: brightness(0.8); }
   .mc-right { transform: rotateY(90deg) translateZ(10px); filter: brightness(0.62); }
