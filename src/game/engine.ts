@@ -129,7 +129,7 @@ export class Engine {
     // spawn
     let sx = 0, sz = 0;
     for (let i = 0; i < 200; i++) {
-      if (this.world.height(sx, sz) > 28 && this.world.biome(sx, sz) !== "desert") break;
+      { const bi = this.world.biome(sx, sz); if (this.world.height(sx, sz) > 29 && (bi === "forest" || bi === "plains")) break; }
       sx += 16; sz += (i % 2) * 16;
     }
     const scx = Math.floor(sx / CS), scz = Math.floor(sz / CS);
