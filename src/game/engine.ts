@@ -1,3 +1,4 @@
+import { buildAtlas } from "./textures";
 import * as THREE from "three";
 import { B, BLOCKS, ITEMS, RECIPES, breakInfo, blockDrop, isSolid, type Recipe } from "./blocks";
 import { World, CS, CH, tileUV } from "./world";
@@ -14,7 +15,7 @@ export interface GameState {
   cursor: Slot;
   hp: number;
   food: number;
-  ui: "none" | "inventory";
+  ui: "none" | "inventory" | "chat" | "admin";
   station: Station;
   locked: boolean;
   dead: boolean;
@@ -94,7 +95,7 @@ export class Engine {
   seed: number;
 
   async init() {
-    this.atlas = await new THREE.TextureLoader().loadAsync("/textures/atlas.png");
+    this.atlas = new THREE.CanvasTexture(await buildAtlas());
     this.atlas.magFilter = THREE.NearestFilter;
     this.atlas.minFilter = THREE.NearestMipmapLinearFilter;
     this.atlas.colorSpace = THREE.SRGBColorSpace;
@@ -164,6 +165,8 @@ export class Engine {
     this.on(window, "resize", () => this.resize());
     this.on(window, "keydown", (e: KeyboardEvent) => {
       if (this.state.dead) return;
+      if (this.state.ui === "chat" || this.state.ui === "admin") return; // typing in React UI
+      if (this.state.ui === "none" && (e.code === "KeyT" || e.code === "Slash")) { e.preventDefault(); this.openChat(e.code === "Slash" ? "/" : ""); return; }
       if (e.code === "KeyE") { this.toggleInventory(null); return; }
       if (this.state.ui !== "none") { if (e.code === "Escape") this.closeUI(); return; }
       this.keys.add(e.code);
@@ -265,6 +268,20 @@ export class Engine {
     this.state.ui = "inventory"; this.state.station = station;
     this.keys.clear(); this.mouseL = false;
     document.exitPointerLock();
+    this.emit();
+  }
+  chatPrefix = "";
+  openChat(prefix: string) {
+    this.chatPrefix = prefix; this.state.ui = "chat";
+    this.keys.clear(); this.mouseL = false;
+    document.exitPointerLock(); this.emit();
+  }
+  openAdmin() { this.state.ui = "admin"; this.emit(); }
+  async reloadTextures() {
+    this.atlas.image = await buildAtlas();
+    this.atlas.needsUpdate = true;
+    for (const c of this.world.chunks.values()) c.dirty = true;
+    this.handItem = undefined;
     this.emit();
   }
   closeUI() {
