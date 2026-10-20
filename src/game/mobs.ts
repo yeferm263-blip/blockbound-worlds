@@ -62,7 +62,7 @@ export function boxUV(w: number, h: number, d: number, u: number, v: number, tw:
     [u + d, v + d, w, h],     // +z front
     [u + 2 * d + w, v + d, w, h], // -z back
   ];
-  const uv = g.attributes.uv as THREE.BufferAttribute;
+  const uv = g.attributes["uv"] as THREE.BufferAttribute;
   rects.forEach(([x, y, rw, rh], f) => {
     const u0 = x / tw, u1 = (x + rw) / tw, vt = 1 - y / th, vb = 1 - (y + rh) / th;
     uv.setXY(f * 4 + 0, u0, vt); uv.setXY(f * 4 + 1, u1, vt);

@@ -652,7 +652,7 @@ export class Engine {
       if (this.breakProgress > 0) {
         const stage = Math.min(9, Math.floor(this.breakProgress * 10));
         const cm = this.crack.material as THREE.MeshBasicMaterial;
-        if (cm.userData.stage !== stage) { cm.userData.stage = stage; this.faSetRect(cm.map!, `block/destroy_stage_${stage}.png`); }
+        if (cm.userData["stage"] !== stage) { cm.userData["stage"] = stage; this.faSetRect(cm.map!, `block/destroy_stage_${stage}.png`); }
       }
       const name = BLOCKS[hit.id]?.name ?? null;
       if (st.target !== name) { st.target = name; this.emit(); }
@@ -867,7 +867,7 @@ export class Engine {
       if (m.type === "chicken") m.model.arms.forEach((a, i) => (a.rotation.z = (i ? -1 : 1) * (m.onGround ? Math.abs(sw) * 0.3 : 0.6 + Math.sin(this.time * 4000) * 0.6)));
       else m.model.arms.forEach((a, i) => (a.rotation.x = humanoid ? -Math.PI / 2.2 + (i ? sw : -sw) * 0.2 + Math.sin(m.walk * 0.5 + i) * 0.05 : 0));
       // body bob + breathing, hurt tilt (Actions & Stuff style)
-      if (m.model.body) m.model.body.position.y = (m.model.body.userData.y0 ??= m.model.body.position.y) + Math.abs(sw) * 0.02 + Math.sin(this.time * 900 + m.yaw) * 0.006;
+      if (m.model.body) m.model.body.position.y = (m.model.body.userData["y0"] ??= m.model.body.position.y) + Math.abs(sw) * 0.02 + Math.sin(this.time * 900 + m.yaw) * 0.006;
       m.model.root.rotation.z = m.hurt > 0 ? Math.sin(m.hurt * 20) * 0.12 : 0;
       if (!spec.hostile && m.model.head) m.model.head.rotation.x = sp < 0.2 ? Math.sin(this.time * 300 + m.yaw) * 0.25 + 0.2 : 0;
       if (Math.random() < dt * 0.04 && dist < 16) sfx.mob(m.type);
