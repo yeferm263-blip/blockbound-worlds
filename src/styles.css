@@ -142,3 +142,69 @@
     color: var(--color-foreground);
   }
 }
+
+/* ===== VoxelCraft game design system ===== */
+:root {
+  --mc-panel: oklch(0.78 0 0);
+  --mc-panel-light: oklch(0.97 0 0);
+  --mc-panel-dark: oklch(0.42 0 0);
+  --mc-slot: oklch(0.55 0 0);
+  --mc-slot-dark: oklch(0.32 0 0);
+  --mc-text: oklch(0.98 0 0);
+  --mc-text-dark: oklch(0.25 0 0);
+  --mc-shadow: oklch(0.2 0 0 / 0.75);
+  --mc-heart: oklch(0.6 0.23 27);
+  --mc-food: oklch(0.62 0.13 55);
+  --mc-empty: oklch(0.2 0 0 / 0.55);
+  --mc-overlay: oklch(0.12 0.02 250 / 0.6);
+  --mc-dead: oklch(0.35 0.15 25 / 0.6);
+  --mc-accent: oklch(0.82 0.17 125);
+  --mc-hurt: oklch(0.55 0.25 27);
+}
+@theme inline { --font-pixel: "VT323", ui-monospace, monospace; }
+
+@layer components {
+  .mc-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; background: var(--mc-overlay); color: var(--mc-text); z-index: 30; }
+  .mc-overlay-soft { background: oklch(0 0 0 / 0.45); }
+  .mc-overlay-dead { background: var(--mc-dead); }
+  .mc-title { font-size: 4.5rem; letter-spacing: 0.08em; color: var(--mc-text); text-shadow: 4px 4px 0 var(--mc-shadow); }
+  .mc-button { min-width: 18rem; padding: 0.5rem 1rem; font-size: 1.75rem; color: var(--mc-text); background: var(--mc-slot); border: 3px solid var(--mc-slot-dark); box-shadow: inset 2px 2px 0 var(--mc-panel-light), inset -2px -2px 0 var(--mc-panel-dark); text-shadow: 2px 2px 0 var(--mc-shadow); }
+  .mc-button:hover { outline: 3px solid var(--mc-text); }
+  .mc-help { text-align: center; font-size: 1.25rem; line-height: 1.4; text-shadow: 2px 2px 0 var(--mc-shadow); }
+  .mc-crosshair { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%); font-size: 2.2rem; color: var(--mc-text); mix-blend-mode: difference; pointer-events: none; }
+  .mc-info { position: absolute; left: 0.75rem; top: 0.5rem; font-size: 1.35rem; color: var(--mc-text); text-shadow: 2px 2px 0 var(--mc-shadow); pointer-events: none; }
+  .mc-toast { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-size: 1.8rem; color: var(--mc-accent); text-shadow: 2px 2px 0 var(--mc-shadow); pointer-events: none; }
+  .mc-held-name { font-size: 1.4rem; color: var(--mc-text); text-shadow: 2px 2px 0 var(--mc-shadow); }
+  .mc-hurt { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, var(--mc-hurt) 100%); }
+  .mc-hotbar { display: flex; gap: 2px; padding: 3px; background: var(--mc-shadow); border: 2px solid var(--mc-slot-dark); }
+  .mc-slot { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: var(--mc-slot); box-shadow: inset 2px 2px 0 var(--mc-slot-dark), inset -2px -2px 0 var(--mc-panel-light); cursor: pointer; }
+  .mc-hotbar .mc-slot { background: oklch(0.4 0 0 / 0.6); box-shadow: inset 0 0 0 1px var(--mc-slot-dark); }
+  .mc-hotbar .mc-slot-active { box-shadow: 0 0 0 3px var(--mc-text), inset 0 0 0 1px var(--mc-slot-dark); z-index: 1; }
+  .mc-count { position: absolute; right: 2px; bottom: -2px; font-size: 1.35rem; color: var(--mc-text); text-shadow: 2px 2px 0 var(--mc-shadow); pointer-events: none; }
+  .mc-panel { padding: 1rem; background: var(--mc-panel); color: var(--mc-text-dark); border: 3px solid var(--mc-slot-dark); box-shadow: inset 3px 3px 0 var(--mc-panel-light), inset -3px -3px 0 var(--mc-panel-dark); font-size: 1.2rem; }
+  .mc-panel-title { font-size: 1.5rem; margin-bottom: 0.4rem; }
+  .mc-grid { display: grid; grid-template-columns: repeat(9, 44px); gap: 2px; }
+  .mc-recipes { display: flex; flex-direction: column; gap: 4px; max-height: 340px; overflow-y: auto; padding-right: 4px; }
+  .mc-recipe { display: flex; align-items: center; gap: 0.5rem; padding: 2px 6px 2px 2px; background: var(--mc-panel-light); border: 2px solid var(--mc-panel-dark); font-size: 1.1rem; color: var(--mc-text-dark); }
+  .mc-recipe:hover:not(:disabled) { border-color: var(--mc-accent); }
+  .mc-recipe-off { opacity: 0.45; cursor: not-allowed; }
+  .mc-item-img { width: 32px; height: 32px; image-rendering: pixelated; pointer-events: none; }
+
+  /* 3D isometric block icons */
+  .mc-cube-wrap { width: 30px; height: 30px; perspective: none; pointer-events: none; }
+  .mc-cube { position: relative; width: 20px; height: 20px; margin: 5px; transform-style: preserve-3d; transform: rotateX(-30deg) rotateY(45deg); }
+  .mc-face { position: absolute; width: 20px; height: 20px; background-image: url(/textures/atlas.png); background-size: 800% 400%; image-rendering: pixelated; backface-visibility: hidden; }
+  .mc-top { transform: rotateX(90deg) translateZ(10px); }
+  .mc-front { transform: translateZ(10px); filter: brightness(0.8); }
+  .mc-right { transform: rotateY(90deg) translateZ(10px); filter: brightness(0.62); }
+
+  /* hearts & hunger as pixel shapes */
+  .mc-heart, .mc-food { width: 16px; height: 16px; display: inline-block; }
+  .mc-heart { clip-path: polygon(0 25%, 25% 0, 50% 20%, 75% 0, 100% 25%, 100% 50%, 50% 100%, 0 50%); }
+  .mc-food { clip-path: polygon(30% 0, 100% 0, 100% 70%, 70% 100%, 0 100%, 0 30%); border-radius: 2px; }
+  .mc-heart.mc-full { background: var(--mc-heart); }
+  .mc-heart.mc-half { background: linear-gradient(90deg, var(--mc-heart) 50%, var(--mc-empty) 50%); }
+  .mc-food.mc-full { background: var(--mc-food); }
+  .mc-food.mc-half { background: linear-gradient(90deg, var(--mc-empty) 50%, var(--mc-food) 50%); }
+  .mc-empty { background: var(--mc-empty); }
+}
