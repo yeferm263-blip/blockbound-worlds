@@ -57,6 +57,7 @@ export class Engine {
   crack!: THREE.Mesh;
   hand = new THREE.Group();
   handItem: string | null | undefined = undefined;
+  lastYaw = 0; lastPitch = 0; swayX = 0; swayY = 0; walkT = 0;
   handSwing = 0;
 
   player: Body = { pos: new THREE.Vector3(), vel: new THREE.Vector3(), w: 0.3, h: 1.8, onGround: false, inWater: false, hitWall: false };
@@ -675,10 +676,25 @@ export class Engine {
         this.hand.add(arm);
       }
     }
-    if (this.handSwing > 0) this.handSwing = Math.max(0, this.handSwing - dt * 4);
-    const s = Math.sin(this.handSwing * Math.PI);
-    this.hand.rotation.set(-s * 0.9, s * 0.3, 0);
-    this.hand.position.set(0.55 - s * 0.15, -0.5 - s * 0.05, -0.8);
+    if (this.handSwing > 0) this.handSwing = Math.max(0, this.handSwing - dt * 3.2);
+    // Actions & Stuff style: sway lags camera rotation, walk bob, arc slash with ease-out.
+    const yaw = this.yaw, pitch = this.pitch;
+    const dyaw = Math.atan2(Math.sin(yaw - this.lastYaw), Math.cos(yaw - this.lastYaw));
+    this.lastYaw = yaw;
+    const k = 1 - Math.exp(-10 * dt);
+    this.swayX += (THREE.MathUtils.clamp(-dyaw * 6, -0.25, 0.25) - this.swayX) * k;
+    this.swayY += ((pitch - this.lastPitch) * 6 - this.swayY) * k;
+    this.lastPitch = pitch;
+    const p = this.player.vel;
+    const speed = Math.min(1.5, Math.hypot(p.x, p.z) / 4.3);
+    this.walkT += dt * speed * 9;
+    const bx = Math.sin(this.walkT) * 0.035 * speed, by = -Math.abs(Math.cos(this.walkT)) * 0.03 * speed;
+    const t = 1 - this.handSwing; // 0..1 progress
+    const s = this.handSwing > 0 ? Math.sin(t * Math.PI) : 0;
+    const isSword = this.handItem && ITEMS[this.handItem]?.tool === "sword";
+    const arc = isSword ? Math.sin(t * Math.PI * 1.0) : 0;
+    this.hand.rotation.set(-s * 1.1 + this.swayY * 0.4, s * 0.5 + this.swayX + (isSword ? -arc * 0.9 : 0), isSword ? arc * 0.6 : s * 0.2);
+    this.hand.position.set(0.55 - s * 0.25 + bx + this.swayX * 0.3, -0.5 - s * 0.08 + by + this.swayY * 0.1, -0.8 + s * 0.12);
   }
 
   streamT = 0;
