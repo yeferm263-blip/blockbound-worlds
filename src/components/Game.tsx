@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Engine, type GameState, type Slot } from "@/game/engine";
-import { BLOCKS, ITEMS, ATLAS_COLS, ATLAS_ROWS, type Recipe } from "@/game/blocks";
+import { BLOCKS, ITEMS, ATLAS_COLS, ATLAS_ROWS } from "@/game/blocks";
 import { itemIconURL } from "@/game/icons";
 import { AdminPanel, Chat, ChatFeed } from "./AdminTools";
 import { PackSprite, packItemName } from "./PackSprite";
 import { Button } from "./ui/button";
+import guiInventory from "@/assets/gui_inventory.png.asset.json";
+import guiTable from "@/assets/gui_crafting_table.png.asset.json";
+import guiFurnace from "@/assets/gui_furnace.png.asset.json";
 
 function Face({ tile, cls }: { tile: number; cls: string }) {
   const col = tile % ATLAS_COLS, row = Math.floor(tile / ATLAS_COLS);
@@ -149,41 +152,46 @@ export function Game() {
   );
 }
 
+const S = 3; // GUI scale (vanilla GUI pixels -> screen px)
+const GUI_BG = { inventory: guiInventory.url, table: guiTable.url, furnace: guiFurnace.url };
+
+function GuiSlot({ x, y, slot, onClick, big }: { x: number; y: number; slot: Slot; onClick: (right: boolean) => void; big?: boolean }) {
+  const size = (big ? 24 : 16) * S, off = big ? -4 * S : 0;
+  return (
+    <div
+      className="mc-gui-slot"
+      style={{ left: x * S + off, top: y * S + off, width: size, height: size }}
+      title={slot ? ITEMS[slot.id]?.name : undefined}
+      onMouseDown={(e) => { e.preventDefault(); onClick(e.button === 2); }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      {slot && <span className="mc-gui-icon"><ItemIcon id={slot.id} /></span>}
+      {slot && slot.count > 1 && <span className="mc-count">{slot.count}</span>}
+    </div>
+  );
+}
+
 function InventoryUI({ s, engine }: { s: GameState; engine: Engine }) {
-  const recipes = engine.recipes().filter((r) => !r.station || r.station === s.station);
-  const title = s.station === "table" ? "Mesa de trabajo" : s.station === "furnace" ? "Horno" : "Inventario";
+  const kind = s.station ?? "inventory";
+  const result = engine.gridResult();
+  const take = () => engine.takeResult();
+  const gridCells: { x: number; y: number; i: number }[] = [];
+  if (kind === "table") for (let i = 0; i < 9; i++) gridCells.push({ x: 30 + (i % 3) * 18, y: 17 + Math.floor(i / 3) * 18, i });
+  else if (kind === "inventory") for (let i = 0; i < 4; i++) gridCells.push({ x: 98 + (i % 2) * 18, y: 18 + Math.floor(i / 2) * 18, i });
+  else gridCells.push({ x: 56, y: 17, i: 0 }, { x: 56, y: 53, i: 1 });
+  const out = kind === "table" ? { x: 124, y: 35 } : kind === "inventory" ? { x: 154, y: 28 } : { x: 116, y: 35 };
+  const title = kind === "table" ? "Mesa de trabajo" : kind === "furnace" ? "Horno" : "Creación";
+  const titlePos = kind === "inventory" ? { x: 97, y: 6 } : { x: 8, y: 6 };
   return (
     <div className="mc-overlay mc-overlay-soft" onMouseDown={(e) => { if (e.target === e.currentTarget) engine.closeUI(); }}>
-      <div className="mc-panel" onContextMenu={(e) => e.preventDefault()}>
-        <div className="flex gap-6">
-          <div>
-            <h2 className="mc-panel-title">{title}</h2>
-            <div className="mc-grid">
-              {s.slots.slice(9).map((sl, i) => <SlotView key={i} slot={sl} onClick={(r) => engine.clickSlot(i + 9, r)} />)}
-            </div>
-            <div className="mc-grid mt-3">
-              {s.slots.slice(0, 9).map((sl, i) => <SlotView key={i} slot={sl} onClick={(r) => engine.clickSlot(i, r)} />)}
-            </div>
-          </div>
-          <div className="w-72">
-            <h2 className="mc-panel-title">{s.station === "furnace" ? "Fundir (usa carbón)" : "Crafteo"}</h2>
-            <div className="mc-recipes">
-              {recipes.map((r: Recipe, i) => {
-                const ok = engine.canCraft(r, s.station);
-                return (
-                  <button key={i} className={`mc-recipe ${ok ? "" : "mc-recipe-off"}`} disabled={!ok} onClick={() => engine.craft(r)}>
-                    <SlotView slot={{ id: r.out, count: r.count }} />
-                    <div className="text-left leading-tight">
-                      <div>{ITEMS[r.out]?.name}</div>
-                      <div className="opacity-70">{Object.entries(r.needs).map(([id, n]) => `${n}× ${ITEMS[id]?.name}`).join(", ")}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-            {!s.station && <p className="mt-2 opacity-70">Coloca una Mesa de trabajo o un Horno y haz clic derecho para más recetas.</p>}
-          </div>
-        </div>
+      <div className="mc-gui" style={{ width: 176 * S, height: 166 * S, backgroundImage: `url(${GUI_BG[kind]})`, backgroundSize: `${256 * S}px ${256 * S}px` }} onContextMenu={(e) => e.preventDefault()}>
+        <span className="mc-gui-label" style={{ left: titlePos.x * S, top: titlePos.y * S - 4 }}>{title}</span>
+        <span className="mc-gui-label" style={{ left: 8 * S, top: 72 * S - 4 }}>Inventario</span>
+        {kind === "inventory" && <div className="mc-gui-player" style={{ left: 26 * S, top: 8 * S, width: 49 * S, height: 70 * S }}><PackSprite name="entity/player/wide/steve.png" width={8 * S * 2} height={8 * S * 2} className="mc-gui-face" /></div>}
+        {gridCells.map((c) => <GuiSlot key={c.i} x={c.x} y={c.y} slot={s.grid[c.i]} onClick={(r) => engine.clickGrid(c.i, r)} />)}
+        <GuiSlot x={out.x} y={out.y} slot={result ? { id: result.out, count: result.count } : null} onClick={take} />
+        {s.slots.slice(9).map((sl, i) => <GuiSlot key={"m" + i} x={8 + (i % 9) * 18} y={84 + Math.floor(i / 9) * 18} slot={sl} onClick={(r) => engine.clickSlot(i + 9, r)} />)}
+        {s.slots.slice(0, 9).map((sl, i) => <GuiSlot key={"h" + i} x={8 + i * 18} y={142} slot={sl} onClick={(r) => engine.clickSlot(i, r)} />)}
       </div>
     </div>
   );

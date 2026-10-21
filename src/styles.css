@@ -197,6 +197,12 @@
   .mc-recipe { display: flex; align-items: center; gap: 0.5rem; padding: 2px 6px 2px 2px; background: var(--mc-panel-light); border: 2px solid var(--mc-panel-dark); font-size: 1.1rem; color: var(--mc-text-dark); }
   .mc-recipe:hover:not(:disabled) { border-color: var(--mc-accent); }
   .mc-recipe-off { opacity: 0.45; cursor: not-allowed; }
+  .mc-gui { position: relative; background-repeat: no-repeat; image-rendering: pixelated; background-position: 0 0; }
+  .mc-gui-slot { position: absolute; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .mc-gui-slot:hover { background: color-mix(in oklab, var(--mc-text) 45%, transparent); }
+  .mc-gui-icon { display: flex; transform: scale(1.4); pointer-events: none; }
+  .mc-gui-label { position: absolute; font-size: 1.5rem; line-height: 1; color: var(--mc-text-dark); pointer-events: none; }
+  .mc-gui-player { position: absolute; display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; }
   .mc-item-img { width: 32px; height: 32px; image-rendering: pixelated; pointer-events: none; }
 
   /* 3D isometric block icons */
