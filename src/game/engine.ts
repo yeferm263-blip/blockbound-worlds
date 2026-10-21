@@ -20,7 +20,6 @@ function blockMat(id: number): Material {
   if (id === B.LEAVES || id === B.CACTUS) return "leaves";
   return "stone";
 }
-import { itemCanvas } from "./icons";
 import { hash } from "./noise";
 
 export type Slot = { id: string; count: number } | null;

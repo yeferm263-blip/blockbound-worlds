@@ -52,8 +52,8 @@ export function skinTex(key: SkinKey) {
 
 const PX = 1 / 16;
 /** BoxGeometry whose faces are UV-mapped with Minecraft's box-UV layout. Front = +Z. */
-export function boxUV(w: number, h: number, d: number, u: number, v: number, tw: number, th: number, inflate = 0, scale = PX) {
-  const g = new THREE.BoxGeometry((w + inflate * 2) * scale, (h + inflate * 2) * scale, (d + inflate * 2) * scale);
+export function boxUV(w: number, h: number, d: number, u: number, v: number, tw: number, th: number, inflate = 0, scale = PX, extraH = 0) {
+  const g = new THREE.BoxGeometry((w + inflate * 2) * scale, (h + extraH + inflate * 2) * scale, (d + inflate * 2) * scale);
   const rects: [number, number, number, number][] = [
     [u + d + w, v + d, d, h], // +x (entity left)
     [u, v + d, d, h],         // -x (entity right)
@@ -86,9 +86,11 @@ export function buildMob(type: MobType): MobModel {
   const main = matFor(type);
   const [, tw, th] = SKINS[type];
   /** add cube: size w,h,d at uv(u,v); center (x,y,z) in px relative to parent. */
-  const cube = (parent: THREE.Object3D, w: number, h: number, d: number, u: number, v: number, x: number, y: number, z: number, opts: { rotX?: number; inflate?: number; mat?: THREE.Material; tw?: number; th?: number } = {}) => {
-    const mesh = new THREE.Mesh(boxUV(w, h, d, u, v, opts.tw ?? tw, opts.th ?? th, opts.inflate ?? 0), opts.mat ?? main);
-    mesh.position.set(x * PX, y * PX, z * PX);
+  const cube = (parent: THREE.Object3D, w: number, h: number, d: number, u: number, v: number, x: number, y: number, z: number, opts: { rotX?: number; inflate?: number; mat?: THREE.Material; tw?: number; th?: number; hip?: number } = {}) => {
+    // `hip` extends a limb upward into the torso so the joint never shows a gap while swinging.
+    const hip = opts.hip ?? 0;
+    const mesh = new THREE.Mesh(boxUV(w, h, d, u, v, opts.tw ?? tw, opts.th ?? th, opts.inflate ?? 0, PX, hip), opts.mat ?? main);
+    mesh.position.set(x * PX, (y + hip / 2) * PX, z * PX);
     if (opts.rotX) mesh.rotation.x = opts.rotX;
     mesh.castShadow = true;
     parent.add(mesh);
@@ -106,7 +108,7 @@ export function buildMob(type: MobType): MobModel {
       head = pivot(0, 12, 7);
       cube(head, 8, 8, 8, 0, 0, 0, 0, 4);
       cube(head, 4, 3, 1, 16, 16, 0, -1, 8.5);
-      for (const [x, z] of [[-3, 5], [3, 5], [-3, -7], [3, -7]]) cube(pivot(x, 6, z, legs), 4, 6, 4, 0, 16, 0, -3, 0);
+      for (const [x, z] of [[-3, 5], [3, 5], [-3, -7], [3, -7]]) cube(pivot(x, 6, z, legs), 4, 6, 4, 0, 16, 0, -3, 0, { hip: 3 });
       break;
     }
     case "cow": {
@@ -115,7 +117,7 @@ export function buildMob(type: MobType): MobModel {
       cube(head, 8, 8, 6, 0, 0, 0, 0, 3);
       cube(head, 1, 3, 1, 22, 0, -4.5, 4.5, 2);
       cube(head, 1, 3, 1, 22, 0, 4.5, 4.5, 2);
-      for (const [x, z] of [[-4, 6], [4, 6], [-4, -7], [4, -7]]) cube(pivot(x, 12, z, legs), 4, 12, 4, 0, 16, 0, -6, 0);
+      for (const [x, z] of [[-4, 6], [4, 6], [-4, -7], [4, -7]]) cube(pivot(x, 12, z, legs), 4, 12, 4, 0, 16, 0, -6, 0, { hip: 3 });
       break;
     }
     case "sheep": {
@@ -127,8 +129,8 @@ export function buildMob(type: MobType): MobModel {
       cube(head, 6, 6, 6, 0, 0, 0, 0.5, 2, { inflate: 0.6, mat: wool });
       for (const [x, z] of [[-3, 5], [3, 5], [-3, -6], [3, -6]]) {
         const p = pivot(x, 12, z, legs);
-        cube(p, 4, 12, 4, 0, 16, 0, -6, 0);
-        cube(p, 4, 6, 4, 0, 16, 0, -3, 0, { inflate: 0.5, mat: wool });
+        cube(p, 4, 12, 4, 0, 16, 0, -6, 0, { hip: 3 });
+        cube(p, 4, 6, 4, 0, 16, 0, -3, 0, { inflate: 0.5, mat: wool, hip: 2 });
       }
       break;
     }
@@ -153,14 +155,14 @@ export function buildMob(type: MobType): MobModel {
         const a = pivot(s * (4 + lw / 2), 22, 0, arms);
         cube(a, lw, 12, lw, 40, 16, 0, -4, 0);
       }
-      for (const s of [-1, 1]) cube(pivot(s * 2, 12, 0, legs), lw, 12, lw, 0, 16, 0, -6, 0);
+      for (const s of [-1, 1]) cube(pivot(s * 2, 12, 0, legs), lw, 12, lw, 0, 16, 0, -6, 0, { hip: 2 });
       break;
     }
     case "creeper": {
       body = cube(root, 8, 12, 4, 16, 16, 0, 12, 0);
       head = pivot(0, 18, 0);
       cube(head, 8, 8, 8, 0, 0, 0, 4, 0);
-      for (const [x, z] of [[-2, 2], [2, 2], [-2, -2], [2, -2]]) cube(pivot(x, 6, z, legs), 4, 6, 4, 0, 16, 0, -3, 0);
+      for (const [x, z] of [[-2, 2], [2, 2], [-2, -2], [2, -2]]) cube(pivot(x, 6, z, legs), 4, 6, 4, 0, 16, 0, -3, 0, { hip: 3 });
       break;
     }
     case "spider": {
@@ -183,7 +185,7 @@ export function buildMob(type: MobType): MobModel {
 
 /** Rotate at the hip; move the complete model together, never just the torso. */
 export function animateMobGait(model: MobModel, type: MobType, phase: number, speed: number, time: number) {
-  const swing = Math.sin(phase) * Math.min(1, speed) * 0.7;
+  const swing = Math.sin(phase) * Math.min(1, speed) * (model.legs.length === 4 ? 0.5 : 0.7);
   model.legs.forEach((leg, i) => {
     if (type === "spider") leg.rotation.y = (i % 2 ? swing : -swing) * 0.5;
     else {
