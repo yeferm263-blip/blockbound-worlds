@@ -3,7 +3,8 @@ import * as THREE from "three";
 import { B, BLOCKS, ITEMS, RECIPES, breakInfo, blockDrop, isSolid, type Recipe } from "./blocks";
 import { World, CS, CH, tileUV } from "./world";
 import { MOBS, buildMob, buildArm, animateMobGait, type MobModel, type MobType } from "./mobs";
-import { sfx, startMusic, stopAudio, toggleMusic, type Material } from "./audio";
+import { sfx, startMusic, stopAudio, toggleMusic, preloadSounds, type Material } from "./audio";
+import { itemModel } from "./itemModel";
 import faithfulPng from "@/assets/faithful.png.asset.json";
 import faithful from "./packs/faithful.json";
 
@@ -11,13 +12,14 @@ const FA = faithful as { width: number; height: number; rects: Record<string, nu
 function blockMat(id: number): Material {
   if (id === B.LOG || id === B.BIRCH_LOG || id === B.PLANKS || id === B.TABLE) return "wood";
   if (id === B.DIRT || id === B.GRAVEL) return "dirt";
-  if (id === B.GRASS || id === B.WOOL || id === B.SNOW) return "grass";
+  if (id === B.WOOL) return "cloth";
+  if (id === B.SNOW) return "snow";
+  if (id === B.GRASS) return "grass";
   if (id === B.SAND) return "sand";
   if (id === B.GLASS || id === B.ICE) return "glass";
   if (id === B.LEAVES || id === B.CACTUS) return "leaves";
   return "stone";
 }
-import { itemCanvas } from "./icons";
 import { hash } from "./noise";
 
 export type Slot = { id: string; count: number } | null;
@@ -30,6 +32,8 @@ export interface GameState {
   hp: number;
   food: number;
   ui: "none" | "inventory" | "chat" | "admin";
+  /** Crafting grid: 4 cells (inventory), 9 cells (table), or [input, fuel] (furnace). */
+  grid: Slot[];
   station: Station;
   locked: boolean;
   dead: boolean;
@@ -55,6 +59,25 @@ interface Drop extends Body { id: string; count: number; mesh: THREE.Object3D; a
 interface Arrow { pos: THREE.Vector3; vel: THREE.Vector3; mesh: THREE.Mesh; age: number }
 
 const stack = (id: string) => ITEMS[id]?.stack ?? 64;
+
+/** Shapeless grid matching: furnace = [input, fuel]; otherwise each filled cell counts as one ingredient. */
+export function matchGrid(grid: Slot[], station: Station): Recipe | null {
+  if (station === "furnace") {
+    const [inp, fuel] = grid;
+    if (!inp || fuel?.id !== "coal") return null;
+    return RECIPES.find((r) => r.station === "furnace" && r.needs[inp.id] === 1 && Object.keys(r.needs).length === 2) ?? null;
+  }
+  const cells = grid.slice(0, station === "table" ? 9 : 4);
+  const have: Record<string, number> = {};
+  for (const c of cells) if (c) have[c.id] = (have[c.id] ?? 0) + 1;
+  const keys = Object.keys(have);
+  if (!keys.length) return null;
+  return RECIPES.find((r) => {
+    if (r.station === "furnace" || (r.station === "table" && station !== "table")) return false;
+    const need = Object.entries(r.needs);
+    return need.length === keys.length && need.every(([id, n]) => have[id] === n);
+  }) ?? null;
+}
 
 export class Engine {
   renderer: THREE.WebGLRenderer;
@@ -103,14 +126,17 @@ export class Engine {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.state = {
-      slots: Array(36).fill(null), selected: 0, cursor: null, hp: 20, food: 20, ui: "none", station: null,
+      slots: Array(36).fill(null), selected: 0, cursor: null, hp: 20, food: 20, ui: "none", station: null, grid: Array(9).fill(null),
       locked: false, dead: false, time: this.time, day: 1, target: null, pos: [0, 0, 0], message: null, hurt: 0,
     };
     this.seed = seed;
   }
   seed: number;
 
+  faImg: HTMLImageElement | null = null;
   async init() {
+    preloadSounds();
+    this.faImg = await new Promise((res) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => res(im); im.onerror = () => res(null); im.src = faithfulPng.url; });
     this.atlas = new THREE.CanvasTexture(await buildAtlas());
     this.atlas.magFilter = THREE.NearestFilter;
     this.atlas.minFilter = THREE.NearestMipmapLinearFilter;
@@ -273,8 +299,8 @@ export class Engine {
     const i = this.state.selected; const s = this.state.slots[i]; if (!s) return;
     const slots = this.state.slots.slice(); slots[i] = s.count > 1 ? { id: s.id, count: s.count - 1 } : null; this.state.slots = slots; this.emit();
   }
-  clickSlot(i: number, right: boolean) {
-    const slots = this.state.slots.slice();
+  /** Minecraft cursor rules on any slot array (left = pick/put/swap all, right = half/one). */
+  clickIn(slots: Slot[], i: number, right: boolean) {
     const s = slots[i]; const c = this.state.cursor;
     if (!c) {
       if (!s) return;
@@ -287,7 +313,25 @@ export class Engine {
       const max = stack(s.id); const add = Math.min(right ? 1 : c.count, max - s.count);
       slots[i] = { id: s.id, count: s.count + add }; const left = c.count - add; this.state.cursor = left > 0 ? { id: c.id, count: left } : null;
     } else { slots[i] = c; this.state.cursor = s; }
-    this.state.slots = slots; this.emit();
+  }
+  clickSlot(i: number, right: boolean) {
+    const slots = this.state.slots.slice(); this.clickIn(slots, i, right); this.state.slots = slots; this.emit();
+  }
+  clickGrid(i: number, right: boolean) {
+    const grid = this.state.grid.slice(); this.clickIn(grid, i, right); this.state.grid = grid; this.emit();
+  }
+  /** Recipe produced by the current grid (shapeless: every filled cell holds one ingredient). */
+  gridResult(): Recipe | null { return matchGrid(this.state.grid, this.state.station); }
+  takeResult() {
+    const r = this.gridResult(); if (!r) return;
+    const c = this.state.cursor;
+    if (c && (c.id !== r.out || c.count + r.count > stack(r.out))) return;
+    this.state.cursor = { id: r.out, count: (c?.count ?? 0) + r.count };
+    const grid = this.state.grid.slice();
+    if (this.state.station === "furnace") {
+      for (const k of [0, 1]) { const g = grid[k]!; grid[k] = g.count > 1 ? { id: g.id, count: g.count - 1 } : null; }
+    } else for (let k = 0; k < grid.length; k++) { const g = grid[k]; if (g) grid[k] = g.count > 1 ? { id: g.id, count: g.count - 1 } : null; }
+    this.state.grid = grid; sfx.pop(); this.emit();
   }
   canCraft(r: Recipe, station: Station) {
     if (r.station === "table" && station !== "table") return false;
@@ -323,7 +367,9 @@ export class Engine {
     this.emit();
   }
   closeUI() {
-    if (this.state.cursor) { const c = this.state.cursor; this.state.cursor = null; const left = this.give(c.id, c.count); if (left) this.spawnDrop(c.id, left, this.eye()); }
+    const back = [this.state.cursor, ...this.state.grid];
+    this.state.cursor = null; this.state.grid = Array(9).fill(null);
+    for (const c of back) if (c) { const left = this.give(c.id, c.count); if (left) this.spawnDrop(c.id, left, this.eye()); }
     this.state.ui = "none"; this.state.station = null; this.emit();
     this.canvas.requestPointerLock();
   }
@@ -420,7 +466,7 @@ export class Engine {
 
   damageMob(m: Mob, dmg: number, dir: THREE.Vector3) {
     if (m.hurt > 0.2) return;
-    m.hp -= dmg; m.hurt = 0.5; sfx.hit(); sfx.mob(m.type);
+    m.hp -= dmg; m.hurt = 0.5; sfx.hit(); sfx.mobHurt(m.type);
     m.vel.x += dir.x * 7; m.vel.z += dir.z * 7; m.vel.y = 5;
     if (!MOBS[m.type].hostile) { m.wander = 4; m.dir.set(dir.x, dir.z).normalize(); }
     if (m.hp <= 0) this.killMob(m, true);
@@ -511,10 +557,7 @@ export class Engine {
   itemMesh(id: string, size: number): THREE.Object3D {
     const it = ITEMS[id];
     if (it?.block) return new THREE.Mesh(this.blockGeo(it.block, size), new THREE.MeshLambertMaterial({ map: this.atlas, alphaTest: 0.5 }));
-    const tex = new THREE.CanvasTexture(itemCanvas(id));
-    tex.magFilter = THREE.NearestFilter; tex.colorSpace = THREE.SRGBColorSpace;
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(size * 1.6, size * 1.6), new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide }));
-    return m;
+    return itemModel(id, size * 1.6, this.faImg);
   }
 
   spawnMob(type: MobType, pos: THREE.Vector3) {
