@@ -3,6 +3,8 @@ import { Engine, type GameState, type Slot } from "@/game/engine";
 import { BLOCKS, ITEMS, ATLAS_COLS, ATLAS_ROWS, type Recipe } from "@/game/blocks";
 import { itemIconURL } from "@/game/icons";
 import { AdminPanel, Chat, ChatFeed } from "./AdminTools";
+import { PackSprite, packItemName } from "./PackSprite";
+import { Button } from "./ui/button";
 
 function Face({ tile, cls }: { tile: number; cls: string }) {
   const col = tile % ATLAS_COLS, row = Math.floor(tile / ATLAS_COLS);
@@ -18,7 +20,8 @@ function Face({ tile, cls }: { tile: number; cls: string }) {
 
 export function ItemIcon({ id }: { id: string }) {
   const it = ITEMS[id];
-  const url = useMemo(() => (it?.block ? null : itemIconURL(id)), [id, it]);
+  const sprite = packItemName(id);
+  const url = useMemo(() => (it?.block || sprite ? null : itemIconURL(id)), [id, it, sprite]);
   if (it?.block) {
     const t = BLOCKS[it.block].tex;
     return (
@@ -31,7 +34,8 @@ export function ItemIcon({ id }: { id: string }) {
       </div>
     );
   }
-  return <img src={url!} alt={it?.name} className="mc-item-img" draggable={false} />;
+  if (sprite) return <PackSprite name={sprite} width={32} height={32} />;
+  return url ? <img src={url} alt={it?.name} className="mc-item-img" draggable={false} /> : null;
 }
 
 function SlotView({ slot, active, onClick }: { slot: Slot; active?: boolean; onClick?: (right: boolean) => void }) {
@@ -50,11 +54,13 @@ function SlotView({ slot, active, onClick }: { slot: Slot; active?: boolean; onC
 
 function Bar({ value, kind }: { value: number; kind: "heart" | "food" }) {
   return (
-    <div className="flex gap-[2px]">
+    <div className="mc-status-bar" role="img" aria-label={`${kind === "heart" ? "Salud" : "Comida"}: ${value}/20`}>
       {Array.from({ length: 10 }, (_, i) => {
         const v = value - i * 2;
         const state = v >= 2 ? "full" : v === 1 ? "half" : "empty";
-        return <span key={i} className={`mc-${kind} mc-${state}`} />;
+        const empty = kind === "heart" ? "gui/sprites/hud/heart/container.png" : "gui/sprites/hud/food_empty.png";
+        const filled = kind === "heart" ? `gui/sprites/hud/heart/${state}.png` : `gui/sprites/hud/food_${state}.png`;
+        return <span key={i} className="mc-status-icon"><PackSprite name={empty} />{state !== "empty" && <PackSprite name={filled} className="mc-sprite-layer" />}</span>;
       })}
     </div>
   );
@@ -69,7 +75,9 @@ export function Game() {
   const addLog = (m: string) => setChat((c) => [...c.slice(-50), { m, t: Date.now() }]);
 
   useEffect(() => {
-    const e = new Engine(ref.current!);
+    const canvas = ref.current;
+    if (!canvas) return;
+    const e = new Engine(canvas);
     let unsub = () => {};
     e.init().then(() => { unsub = e.subscribe(setS); setEngine(e); });
     const iv = setInterval(() => e.emit(), 500);
@@ -77,6 +85,7 @@ export function Game() {
   }, []);
 
   const hour = s ? Math.floor(((s.time * 24 + 6) % 24)) : 0;
+  const held = s?.slots[s.selected];
 
   return (
     <div className="fixed inset-0 select-none overflow-hidden bg-background font-pixel" onMouseMove={(e) => setMouse({ x: e.clientX, y: e.clientY })}>
@@ -94,12 +103,14 @@ export function Game() {
           {s.message && <div className="mc-toast">{s.message}</div>}
 
           <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1">
-            {s.slots[s.selected] && <div className="mc-held-name">{ITEMS[s.slots[s.selected]!.id]?.name}</div>}
-            <div className="flex w-full justify-between gap-6 px-1">
+            {held && <div className="mc-held-name">{ITEMS[held.id]?.name}</div>}
+            <div className="flex w-full justify-between">
               <Bar value={s.hp} kind="heart" />
               <Bar value={s.food} kind="food" />
             </div>
             <div className="mc-hotbar">
+              <PackSprite name="gui/sprites/hud/hotbar.png" className="mc-hotbar-texture" />
+              <div className="mc-hotbar-selection" style={{ left: s.selected * 40 - 2 }}><PackSprite name="gui/sprites/hud/hotbar_selection.png" /></div>
               {s.slots.slice(0, 9).map((sl, i) => <SlotView key={i} slot={sl} active={i === s.selected} onClick={() => engine?.select(i)} />)}
             </div>
           </div>
@@ -116,7 +127,7 @@ export function Game() {
           {!s.locked && s.ui === "none" && !s.dead && (
             <div className="mc-overlay cursor-pointer" onClick={() => ref.current?.requestPointerLock()}>
               <h1 className="mc-title">VOXELCRAFT</h1>
-              <button className="mc-button">Jugar</button>
+              <Button variant="ghost" className="mc-button">Jugar</Button>
               <div className="mc-help">
                 <p>WASD mover · Espacio saltar/nadar · Ctrl correr · Shift agacharse</p>
                 <p>Clic izq. (mantener) picar / talar / atacar · Clic der. colocar / comer / usar mesa y horno</p>
@@ -129,7 +140,7 @@ export function Game() {
           {s.dead && (
             <div className="mc-overlay mc-overlay-dead">
               <h1 className="mc-title">¡Has muerto!</h1>
-              <button className="mc-button" onClick={() => engine?.respawn()}>Reaparecer</button>
+              <Button variant="ghost" className="mc-button" onClick={() => engine?.respawn()}>Reaparecer</Button>
             </div>
           )}
         </>

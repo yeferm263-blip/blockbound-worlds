@@ -102,7 +102,7 @@ export function buildMob(type: MobType): MobModel {
   let body: THREE.Object3D | undefined;
   switch (type) {
     case "pig": {
-      body = cube(root, 10, 16, 8, 28, 8, 0, 13, 0, { rotX: R });
+      body = cube(root, 10, 16, 8, 28, 8, 0, 10, 0, { rotX: R });
       head = pivot(0, 12, 7);
       cube(head, 8, 8, 8, 0, 0, 0, 0, 4);
       cube(head, 4, 3, 1, 16, 16, 0, -1, 8.5);
@@ -110,7 +110,7 @@ export function buildMob(type: MobType): MobModel {
       break;
     }
     case "cow": {
-      body = cube(root, 12, 18, 10, 18, 4, 0, 19, 0, { rotX: R });
+      body = cube(root, 12, 18, 10, 18, 4, 0, 17, 0, { rotX: R });
       head = pivot(0, 20, 8);
       cube(head, 8, 8, 6, 0, 0, 0, 0, 3);
       cube(head, 1, 3, 1, 22, 0, -4.5, 4.5, 2);
@@ -120,8 +120,8 @@ export function buildMob(type: MobType): MobModel {
     }
     case "sheep": {
       const wool = matFor("wool");
-      body = cube(root, 8, 16, 6, 28, 8, 0, 18, 0, { rotX: R });
-      cube(root, 8, 16, 6, 28, 8, 0, 18, 0, { rotX: R, inflate: 1.75, mat: wool });
+      body = cube(root, 8, 16, 6, 28, 8, 0, 15, 0, { rotX: R });
+      cube(root, 8, 16, 6, 28, 8, 0, 15, 0, { rotX: R, inflate: 1.75, mat: wool });
       head = pivot(0, 20, 7);
       cube(head, 6, 6, 8, 0, 0, 0, 0, 3);
       cube(head, 6, 6, 6, 0, 0, 0, 0.5, 2, { inflate: 0.6, mat: wool });
@@ -160,7 +160,7 @@ export function buildMob(type: MobType): MobModel {
       body = cube(root, 8, 12, 4, 16, 16, 0, 12, 0);
       head = pivot(0, 18, 0);
       cube(head, 8, 8, 8, 0, 0, 0, 4, 0);
-      for (const [x, z] of [[-2, 4], [2, 4], [-2, -4], [2, -4]]) cube(pivot(x, 6, z, legs), 4, 6, 4, 0, 16, 0, -3, 0);
+      for (const [x, z] of [[-2, 2], [2, 2], [-2, -2], [2, -2]]) cube(pivot(x, 6, z, legs), 4, 6, 4, 0, 16, 0, -3, 0);
       break;
     }
     case "spider": {
@@ -179,6 +179,19 @@ export function buildMob(type: MobType): MobModel {
     }
   }
   return { root, legs, arms, mats, head, body };
+}
+
+/** Rotate at the hip; move the complete model together, never just the torso. */
+export function animateMobGait(model: MobModel, type: MobType, phase: number, speed: number, time: number) {
+  const swing = Math.sin(phase) * Math.min(1, speed) * 0.7;
+  model.legs.forEach((leg, i) => {
+    if (type === "spider") leg.rotation.y = (i % 2 ? swing : -swing) * 0.5;
+    else {
+      const diagonal = model.legs.length === 4 ? (i === 0 || i === 3) : i % 2 === 0;
+      leg.rotation.x = diagonal ? swing : -swing;
+    }
+  });
+  return Math.abs(swing) * 0.02 + Math.sin(time) * 0.006;
 }
 
 /** First-person Steve arm (skin from the pack), pointing forward. */

@@ -2,7 +2,7 @@ import { buildAtlas } from "./textures";
 import * as THREE from "three";
 import { B, BLOCKS, ITEMS, RECIPES, breakInfo, blockDrop, isSolid, type Recipe } from "./blocks";
 import { World, CS, CH, tileUV } from "./world";
-import { MOBS, buildMob, buildArm, type MobModel, type MobType } from "./mobs";
+import { MOBS, buildMob, buildArm, animateMobGait, type MobModel, type MobType } from "./mobs";
 import { sfx, startMusic, stopAudio, toggleMusic, type Material } from "./audio";
 import faithfulPng from "@/assets/faithful.png.asset.json";
 import faithful from "./packs/faithful.json";
@@ -859,20 +859,17 @@ export class Engine {
       const sp = Math.hypot(m.vel.x, m.vel.z);
       m.walk += sp * dt * 3;
       const sw = Math.sin(m.walk) * Math.min(1, sp) * 0.7;
-      m.model.legs.forEach((l, i) => {
-        if (m.type === "spider") l.rotation.y = (i % 2 ? sw : -sw) * 0.5;
-        else l.rotation.x = i % 2 ? sw : -sw;
-      });
+      const bob = animateMobGait(m.model, m.type, m.walk, sp, this.time * 900 + m.yaw);
       const humanoid = m.type === "zombie" || m.type === "skeleton";
       if (m.type === "chicken") m.model.arms.forEach((a, i) => (a.rotation.z = (i ? -1 : 1) * (m.onGround ? Math.abs(sw) * 0.3 : 0.6 + Math.sin(this.time * 4000) * 0.6)));
       else m.model.arms.forEach((a, i) => (a.rotation.x = humanoid ? -Math.PI / 2.2 + (i ? sw : -sw) * 0.2 + Math.sin(m.walk * 0.5 + i) * 0.05 : 0));
-      // body bob + breathing, hurt tilt (Actions & Stuff style)
-      if (m.model.body) m.model.body.position.y = (m.model.body.userData["y0"] ??= m.model.body.position.y) + Math.abs(sw) * 0.02 + Math.sin(this.time * 900 + m.yaw) * 0.006;
+      // Shared bob keeps the torso, wool, head and hip joints connected.
       m.model.root.rotation.z = m.hurt > 0 ? Math.sin(m.hurt * 20) * 0.12 : 0;
       if (!spec.hostile && m.model.head) m.model.head.rotation.x = sp < 0.2 ? Math.sin(this.time * 300 + m.yaw) * 0.25 + 0.2 : 0;
       if (Math.random() < dt * 0.04 && dist < 16) sfx.mob(m.type);
       if (m.model.head && spec.hostile && dist < 18) m.model.head.rotation.x = -Math.atan2(toP.y - 1, Math.hypot(toP.x, toP.z)) * 0.5;
       m.model.root.position.copy(m.pos);
+      m.model.root.position.y += bob;
       m.model.root.rotation.y = m.yaw;
       if (m.type !== "creeper") for (const mat of m.model.mats) mat.emissive.setRGB(m.hurt > 0.2 ? 0.7 : 0, 0, 0);
     }
