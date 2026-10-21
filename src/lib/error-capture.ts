@@ -64,9 +64,24 @@ console.error = (...args: unknown[]) => {
 
 if (typeof globalThis.addEventListener === "function") {
   globalThis.addEventListener("error", (event) => record((event as ErrorEvent).error ?? event));
-  globalThis.addEventListener("unhandledrejection", (event) =>
-    record((event as PromiseRejectionEvent).reason),
-  );
+  globalThis.addEventListener("unhandledrejection", (event) => {
+    const reason = (event as PromiseRejectionEvent).reason;
+    const msg =
+      reason instanceof Error
+        ? reason.message
+        : typeof reason === "string"
+          ? reason
+          : ((reason as { message?: string })?.message ?? "");
+    if (
+      msg.includes("Pointer lock") ||
+      msg.includes("pointer lock") ||
+      (reason as DOMException)?.name === "WrongDocumentError"
+    ) {
+      // Benign pointer lock cooldown rejection when exiting/entering quickly
+      return;
+    }
+    record(reason);
+  });
 }
 
 export function consumeLastCapturedError(): unknown {

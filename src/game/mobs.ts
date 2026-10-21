@@ -320,9 +320,9 @@ export function buildMob(type: MobType): MobModel {
       for (const s of [-1, 1])
         cube(pivot(s * 2, 12, 0, legs), lw, 12, lw, 0, 16, 0, -6, 0, { hip: 2 });
       if (type === "skeleton" && arms[0]) {
-        const bow = buildBowMesh();
+        const bow = buildBowMesh(mats);
         // Position bow in the right hand (bottom of arm)
-        bow.position.set(0, -10 * PX, 1.5 * PX);
+        bow.position.set(0, -10 * PX, 1.2 * PX);
         bow.rotation.set(Math.PI / 2, 0, 0);
         arms[0].add(bow);
       }
@@ -361,19 +361,19 @@ export function buildMob(type: MobType): MobModel {
         // Upper leg (femur): extends outward and arches UPWARD
         const femur = new THREE.Group();
         p.add(femur);
-        // Slant upward so knees are elevated
-        femur.rotation.z = -side * 0.38;
+        // Slant upward so knees are elevated above the back
+        femur.rotation.z = side * 0.35;
         cube(femur, 8, 2, 2, 18, 0, side * 4, 0, 0);
 
         // Knee joint at the end of the upper leg
         const knee = new THREE.Group();
         knee.position.set(side * 8 * PX, 0, 0);
         // Bend downward and outward so the tibia slopes down to the ground
-        knee.rotation.z = side * 0.85;
+        knee.rotation.z = -side * 0.95;
         femur.add(knee);
 
         // Lower leg (tibia): points down toward ground level
-        cube(knee, 2, 10, 2, 18, 0, side * 0.8, -4.5, 0);
+        cube(knee, 2, 9, 2, 18, 0, side * 1, -4.5, 0);
 
         // Natural leg spread fan angles
         const spreadY = (1.5 - (i % 4)) * 0.32 * side;
@@ -386,47 +386,58 @@ export function buildMob(type: MobType): MobModel {
 }
 
 /** 3D wooden bow for skeletons and players with proper curved shape and visible white string. */
-export function buildBowMesh() {
+export function buildBowMesh(mats?: THREE.MeshLambertMaterial[]) {
   const g = new THREE.Group();
-  const woodMat = new THREE.MeshLambertMaterial({ color: 0x825227 });
-  const darkWood = new THREE.MeshLambertMaterial({ color: 0x513114 });
+  // Warm Minecraft oak wood with slight emissive to guarantee visibility in low light and night
+  const woodMat = new THREE.MeshLambertMaterial({
+    color: 0x935a2a,
+    emissive: new THREE.Color(0x28180c),
+  });
+  const darkWood = new THREE.MeshLambertMaterial({
+    color: 0x5a3416,
+    emissive: new THREE.Color(0x1c1008),
+  });
   const stringMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
+  if (mats) {
+    mats.push(woodMat, darkWood);
+  }
+
   // Center wooden grip
-  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.22, 0.065), darkWood);
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.08), darkWood);
   grip.castShadow = true;
   g.add(grip);
 
   // Upper riser (angling forward)
-  const topMid = new THREE.Mesh(new THREE.BoxGeometry(0.058, 0.24, 0.058), woodMat);
-  topMid.position.set(0, 0.2, 0.05);
+  const topMid = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.24, 0.075), woodMat);
+  topMid.position.set(0, 0.2, 0.06);
   topMid.rotation.x = -0.28;
   topMid.castShadow = true;
   g.add(topMid);
 
   // Upper tip
-  const topTip = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.22, 0.052), darkWood);
-  topTip.position.set(0, 0.4, 0.14);
+  const topTip = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.22, 0.068), darkWood);
+  topTip.position.set(0, 0.4, 0.16);
   topTip.rotation.x = -0.55;
   topTip.castShadow = true;
   g.add(topTip);
 
   // Lower riser (angling forward)
-  const botMid = new THREE.Mesh(new THREE.BoxGeometry(0.058, 0.24, 0.058), woodMat);
-  botMid.position.set(0, -0.2, 0.05);
+  const botMid = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.24, 0.075), woodMat);
+  botMid.position.set(0, -0.2, 0.06);
   botMid.rotation.x = 0.28;
   botMid.castShadow = true;
   g.add(botMid);
 
   // Lower tip
-  const botTip = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.22, 0.052), darkWood);
-  botTip.position.set(0, -0.4, 0.14);
+  const botTip = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.22, 0.068), darkWood);
+  botTip.position.set(0, -0.4, 0.16);
   botTip.rotation.x = 0.55;
   botTip.castShadow = true;
   g.add(botTip);
 
-  // Taut white bowstring connecting tips
-  const string = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.94, 0.022), stringMat);
+  // Taut white bowstring connecting tips (bold enough to be crisp and visible at any distance)
+  const string = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.94, 0.035), stringMat);
   string.position.set(0, 0, -0.02);
   g.add(string);
 

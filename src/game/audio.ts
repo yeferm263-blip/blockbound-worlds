@@ -136,7 +136,9 @@ export const sfx = {
     }
   },
   fuse() {
-    play("fuse", 0.9, 1, 0);
+    if (!play("fuse", 0.9, 1, 0)) {
+      noise(1.5, 3200, 0.6);
+    }
   },
   swing() {
     play("swing.weak", 0.4);

@@ -209,6 +209,74 @@ export class Engine {
   >();
   lastMultiplayerSync = 0;
   onChatMessage?: (msg: string) => void;
+  lastUnlockTime = 0;
+  lockRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+  requestLock() {
+    if (this.disposed || this.state.ui !== "none" || this.state.dead) return;
+    if (document.pointerLockElement === this.canvas) {
+      if (!this.state.locked) {
+        this.state.locked = true;
+        this.emit();
+      }
+      return;
+    }
+
+    const tryAcquire = () => {
+      if (this.disposed || this.state.ui !== "none" || this.state.dead) return;
+      if (document.pointerLockElement === this.canvas) {
+        if (!this.state.locked) {
+          this.state.locked = true;
+          this.emit();
+        }
+        return;
+      }
+      try {
+        const res = this.canvas.requestPointerLock();
+        if (res && typeof (res as Promise<void>).catch === "function") {
+          (res as Promise<void>).catch(() => {
+            // Benign rejection: cooldown window or user exit rate-limiting
+          });
+        }
+      } catch {
+        // Safe catch for synchronous exceptions
+      }
+    };
+
+    if (this.lockRetryTimer) {
+      clearTimeout(this.lockRetryTimer);
+      this.lockRetryTimer = null;
+    }
+
+    tryAcquire();
+
+    const elapsed = performance.now() - this.lastUnlockTime;
+    const COOLDOWN_MS = 1250;
+    if (elapsed < COOLDOWN_MS) {
+      this.lockRetryTimer = setTimeout(
+        () => {
+          this.lockRetryTimer = null;
+          tryAcquire();
+        },
+        COOLDOWN_MS - elapsed + 50,
+      );
+    }
+  }
+
+  safeExitLock() {
+    this.lastUnlockTime = performance.now();
+    if (this.lockRetryTimer) {
+      clearTimeout(this.lockRetryTimer);
+      this.lockRetryTimer = null;
+    }
+    try {
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+    } catch {
+      // Safe catch
+    }
+  }
 
   constructor(
     public canvas: HTMLCanvasElement,
@@ -436,7 +504,7 @@ export class Engine {
     this.on(window, "keyup", (e: KeyboardEvent) => this.keys.delete(e.code));
     this.on(this.canvas, "mousedown", (e: MouseEvent) => {
       if (!this.state.locked) {
-        if (this.state.ui === "none" && !this.state.dead) this.canvas.requestPointerLock();
+        if (this.state.ui === "none" && !this.state.dead) this.requestLock();
         return;
       }
       if (e.button === 0) {
@@ -461,12 +529,25 @@ export class Engine {
       if (this.state.locked) this.select((this.state.selected + (e.deltaY > 0 ? 1 : 8)) % 9);
     });
     this.on(document, "pointerlockchange", () => {
-      this.state.locked = document.pointerLockElement === this.canvas;
-      if (this.state.locked) startMusic();
-      if (!this.state.locked) {
+      const isNowLocked = document.pointerLockElement === this.canvas;
+      if (this.state.locked && !isNowLocked) {
+        this.lastUnlockTime = performance.now();
+      }
+      this.state.locked = isNowLocked;
+      if (this.state.locked) {
+        if (this.lockRetryTimer) {
+          clearTimeout(this.lockRetryTimer);
+          this.lockRetryTimer = null;
+        }
+        startMusic();
+      } else {
         this.keys.clear();
         this.mouseL = false;
       }
+      this.emit();
+    });
+    this.on(document, "pointerlockerror", () => {
+      this.state.locked = document.pointerLockElement === this.canvas;
       this.emit();
     });
   }
@@ -502,7 +583,7 @@ export class Engine {
     stopAudio();
     this.disconnectMultiplayer();
     for (const [t, ev, fn] of this.handlers) t.removeEventListener(ev, fn);
-    if (document.pointerLockElement) document.exitPointerLock();
+    this.safeExitLock();
     this.renderer.dispose();
   }
 
@@ -611,6 +692,9 @@ export class Engine {
                 for (const bc of msg.blockChanges) {
                   this.world.set(bc.x, bc.y, bc.z, bc.id);
                 }
+                for (const ch of this.world.chunks.values()) {
+                  this.world.meshChunk(ch);
+                }
               }
               if (Array.isArray(msg.players)) {
                 for (const p of msg.players) {
@@ -642,6 +726,8 @@ export class Engine {
             } else if (msg.type === "block_change") {
               if (msg.by !== this.multiplayerPlayerId) {
                 this.world.set(msg.x, msg.y, msg.z, msg.id);
+                const ch = this.world.getChunk(Math.floor(msg.x / CS), Math.floor(msg.z / CS));
+                if (ch) this.world.meshChunk(ch);
               }
             } else if (msg.type === "chat") {
               if (this.onChatMessage) {
@@ -735,7 +821,15 @@ export class Engine {
       const s = slots[i];
       if (s && s.id === id && s.count < max) {
         const add = Math.min(n, max - s.count);
-        slots[i] = { id, count: s.count + add, ...(s.durability !== undefined ? { durability: s.durability } : initialDur !== undefined ? { durability: initialDur } : {}) };
+        slots[i] = {
+          id,
+          count: s.count + add,
+          ...(s.durability !== undefined
+            ? { durability: s.durability }
+            : initialDur !== undefined
+              ? { durability: initialDur }
+              : {}),
+        };
         n -= add;
       }
     }
@@ -923,7 +1017,7 @@ export class Engine {
     this.state.station = station;
     this.keys.clear();
     this.mouseL = false;
-    document.exitPointerLock();
+    this.safeExitLock();
     this.emit();
   }
   chatPrefix = "";
@@ -932,7 +1026,7 @@ export class Engine {
     this.state.ui = "chat";
     this.keys.clear();
     this.mouseL = false;
-    document.exitPointerLock();
+    this.safeExitLock();
     this.emit();
   }
   openAdmin() {
@@ -958,7 +1052,7 @@ export class Engine {
     this.state.ui = "none";
     this.state.station = null;
     this.emit();
-    this.canvas.requestPointerLock();
+    this.requestLock();
   }
   dropHeld() {
     const id = this.held();
@@ -1358,7 +1452,7 @@ export class Engine {
     for (const s of this.state.slots)
       if (s) this.spawnDrop(s.id, s.count, this.player.pos.clone().add(new THREE.Vector3(0, 1, 0)));
     this.state.slots = Array(36).fill(null);
-    document.exitPointerLock();
+    this.safeExitLock();
     this.emit();
   }
   respawn() {
@@ -1369,7 +1463,7 @@ export class Engine {
     this.player.vel.set(0, 0, 0);
     this.fallStart = this.spawn.y;
     this.emit();
-    this.canvas.requestPointerLock();
+    this.requestLock();
   }
 
   explode(c: THREE.Vector3, r: number) {
@@ -1978,7 +2072,7 @@ export class Engine {
       m.atk -= dt;
       const move = new THREE.Vector2();
       let spd = spec.speed;
-      if (spec.hostile && dist < 18 && !this.state.dead) {
+      if (spec.hostile && (dist < 18 || (m.type === "creeper" && m.fuse > 0)) && !this.state.dead) {
         move.set(toP.x, toP.z).normalize();
         if (m.type === "skeleton" && dist < 8) move.multiplyScalar(-0.3);
         if (m.type === "skeleton" && dist < 16 && m.atk <= 0) {
@@ -1996,23 +2090,30 @@ export class Engine {
           this.arrows.push({ pos: from, vel: dir.multiplyScalar(18), mesh, age: 0 });
         }
         if (m.type === "creeper") {
-          if (dist < 3.2) {
-            if (m.fuse === 0) sfx.fuse();
-            m.fuse += dt;
-            move.set(0, 0);
-          } else if (dist > 5.5) {
-            m.fuse = Math.max(0, m.fuse - dt * 1.5);
-          } else if (m.fuse > 0) {
-            m.fuse += dt;
-            move.set(0, 0);
+          if (dist < 3.8 || m.fuse > 0) {
+            if (dist > 7.0) {
+              m.fuse = Math.max(0, m.fuse - dt * 1.5);
+              if (m.fuse === 0) {
+                m.model.root.scale.set(1, 1, 1);
+                for (const mat of m.model.mats) mat.emissive.setScalar(0);
+              }
+            } else {
+              if (m.fuse === 0) sfx.fuse();
+              m.fuse += dt;
+              if (dist < 2.2) move.set(0, 0);
+              else move.multiplyScalar(0.45);
+            }
           }
-          const flash = m.fuse > 0 && Math.floor(m.fuse * 9) % 2 === 0;
-          for (const mat of m.model.mats) mat.emissive.setScalar(flash ? 0.85 : 0);
-          m.model.root.scale.set(1 + m.fuse * 0.28, 1 + m.fuse * 0.45, 1 + m.fuse * 0.28);
-          if (m.fuse > 1.4) {
-            this.killMob(m, false);
-            this.explode(m.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 3.5);
-            continue;
+          if (m.fuse > 0) {
+            const flash = Math.floor(m.fuse * 9) % 2 === 0;
+            for (const mat of m.model.mats) mat.emissive.setScalar(flash ? 0.9 : 0);
+            const swell = 1 + Math.min(0.45, m.fuse * 0.28);
+            m.model.root.scale.set(swell, 1 + m.fuse * 0.38, swell);
+            if (m.fuse >= 1.5) {
+              this.killMob(m, false);
+              this.explode(m.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 3.8);
+              continue;
+            }
           }
         } else if (
           spec.damage &&
@@ -2077,13 +2178,30 @@ export class Engine {
               (i ? -1 : 1) *
               (m.onGround ? Math.abs(sw) * 0.3 : 0.6 + Math.sin(this.time * 4000) * 0.6)),
         );
-      else
+      else if (m.type === "skeleton") {
+        const headPitch = m.model.head ? m.model.head.rotation.x * 0.7 : 0;
+        if (dist < 16) {
+          // Aiming stance: both arms raised holding and drawing bow
+          if (m.model.arms[0]) {
+            m.model.arms[0].rotation.set(-Math.PI / 2 + headPitch, 0, 0.35);
+          }
+          if (m.model.arms[1]) {
+            m.model.arms[1].rotation.set(-Math.PI / 2 + headPitch, 0, -0.35);
+          }
+        } else {
+          // Patrol stance: right arm holds bow in front of chest, left arm swings with gait
+          if (m.model.arms[0]) {
+            m.model.arms[0].rotation.set(-0.45 + sw * 0.1, 0, 0.15);
+          }
+          if (m.model.arms[1]) {
+            m.model.arms[1].rotation.set(sw * 0.5, 0, 0);
+          }
+        }
+      } else
         m.model.arms.forEach(
           (a, i) =>
             (a.rotation.x = humanoid
-              ? m.type === "skeleton" && dist < 16
-                ? -Math.PI / 2 + (m.model.head ? m.model.head.rotation.x * 0.7 : 0)
-                : -Math.PI / 2.2 + (i ? sw : -sw) * 0.2 + Math.sin(m.walk * 0.5 + i) * 0.05
+              ? -Math.PI / 2.2 + (i ? sw : -sw) * 0.2 + Math.sin(m.walk * 0.5 + i) * 0.05
               : 0),
         );
       // Shared bob keeps the torso, wool, head and hip joints connected.
