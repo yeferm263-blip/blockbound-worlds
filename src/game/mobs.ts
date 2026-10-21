@@ -469,10 +469,21 @@ export function animateMobGait(
   return Math.abs(swing) * 0.02 + Math.sin(time) * 0.006;
 }
 
-/** First-person Steve arm (skin from the pack), pointing forward. */
-export function buildArm() {
+/** First-person player arm, pointing forward. */
+export function buildArm(customTexture?: THREE.Texture | string) {
+  let map: THREE.Texture;
+  if (customTexture instanceof THREE.Texture) {
+    map = customTexture;
+  } else if (typeof customTexture === "string" && customTexture.length > 0) {
+    map = new THREE.TextureLoader().load(customTexture);
+    map.magFilter = THREE.NearestFilter;
+    map.minFilter = THREE.NearestFilter;
+    map.colorSpace = THREE.SRGBColorSpace;
+  } else {
+    map = skinTex("steve");
+  }
   const mat = new THREE.MeshLambertMaterial({
-    map: skinTex("steve"),
+    map,
     emissive: new THREE.Color(0x383838),
   });
   const m = new THREE.Mesh(boxUV(4, 12, 4, 40, 16, 64, 64, 0, 0.058), mat);
@@ -480,14 +491,28 @@ export function buildArm() {
   return m;
 }
 
-/** Full 3D Steve model for the inventory GUI preview. */
-export function buildPlayerModel(): MobModel {
+/** Full 3D Steve or custom skin model. */
+export function buildPlayerModel(customTexture?: THREE.Texture | string): MobModel {
   const root = new THREE.Group();
   const legs: THREE.Object3D[] = [];
   const arms: THREE.Object3D[] = [];
   const mats: THREE.MeshLambertMaterial[] = [];
+
+  let map: THREE.Texture;
+  if (customTexture instanceof THREE.Texture) {
+    map = customTexture;
+  } else if (typeof customTexture === "string" && customTexture.length > 0) {
+    map = new THREE.TextureLoader().load(customTexture);
+    map.magFilter = THREE.NearestFilter;
+    map.minFilter = THREE.NearestFilter;
+    map.colorSpace = THREE.SRGBColorSpace;
+    map.generateMipmaps = false;
+  } else {
+    map = skinTex("steve");
+  }
+
   const mat = new THREE.MeshLambertMaterial({
-    map: skinTex("steve"),
+    map,
     alphaTest: 0.4,
     side: THREE.DoubleSide,
   });

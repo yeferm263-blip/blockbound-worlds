@@ -6,6 +6,11 @@ import { AdminPanel, Chat, ChatFeed } from "./AdminTools";
 import { PackSprite, packItemName } from "./PackSprite";
 import { PlayerPreview } from "./PlayerPreview";
 import { Button } from "./ui/button";
+import { MainMenu } from "./MainMenu";
+import { LoadingScreen } from "./LoadingScreen";
+import { SettingsMenu } from "./SettingsMenu";
+import { saveWorld, createNewWorldRecord, type WorldRecord } from "@/game/worldsDb";
+import { startMusic, stopAudio, sfx } from "@/game/audio";
 import guiInventory from "@/assets/gui_inventory.png.asset.json";
 import guiTable from "@/assets/gui_crafting_table.png.asset.json";
 import guiFurnace from "@/assets/gui_furnace.png.asset.json";
@@ -130,30 +135,86 @@ function Bar({ value, kind }: { value: number; kind: "heart" | "food" }) {
 
 export function Game() {
   const ref = useRef<HTMLCanvasElement>(null);
+  const [appState, setAppState] = useState<"menu" | "loading" | "playing">("menu");
+  const [activeWorld, setActiveWorld] = useState<WorldRecord | null>(null);
   const [engine, setEngine] = useState<Engine | null>(null);
   const [s, setS] = useState<GameState | null>(null);
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
   const [chat, setChat] = useState<{ m: string; t: number }[]>([]);
   const [showMultiplayerModal, setShowMultiplayerModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const addLog = (m: string) => setChat((c) => [...c.slice(-50), { m, t: Date.now() }]);
 
   useEffect(() => {
+    if (appState !== "playing" || !activeWorld) return;
     const canvas = ref.current;
     if (!canvas) return;
-    const e = new Engine(canvas);
+    const e = new Engine(canvas, activeWorld.seed, activeWorld);
     let unsub = () => {};
     e.init().then(() => {
       unsub = e.subscribe(setS);
       setEngine(e);
       e.onChatMessage = addLog;
+      startMusic();
+      setTimeout(() => {
+        if (!e.state.locked) e.requestLock();
+      }, 350);
     });
     const iv = setInterval(() => e.emit(), 500);
     return () => {
       clearInterval(iv);
       unsub();
       e.dispose();
+      setEngine(null);
+      setS(null);
     };
-  }, []);
+  }, [appState, activeWorld]);
+
+  const handleStartWorld = (world: WorldRecord) => {
+    setActiveWorld(world);
+    setAppState("loading");
+  };
+
+  const handleLoadingReady = () => {
+    setAppState("playing");
+  };
+
+  const handleJoinServer = (roomCode: string, name: string) => {
+    const tempWorld = createNewWorldRecord(`Sala ${roomCode}`, "survival", 123456);
+    setActiveWorld(tempWorld);
+    setAppState("loading");
+    setTimeout(() => {
+      if (engine) engine.connectMultiplayer(roomCode, name);
+    }, 1500);
+  };
+
+  const handleSaveAndQuit = async () => {
+    sfx.click();
+    if (engine && activeWorld) {
+      const thumb = engine.getScreenshot();
+      const worldData = engine.exportWorldData();
+      await saveWorld({
+        ...activeWorld,
+        lastPlayed: Date.now(),
+        thumbnailDataUrl: thumb || activeWorld.thumbnailDataUrl,
+        worldData,
+      });
+    }
+    stopAudio();
+    if (engine) engine.safeExitLock();
+    setAppState("menu");
+    setActiveWorld(null);
+    setEngine(null);
+    setS(null);
+  };
+
+  if (appState === "menu") {
+    return <MainMenu onStartWorld={handleStartWorld} onJoinServer={handleJoinServer} />;
+  }
+
+  if (appState === "loading" && activeWorld) {
+    return <LoadingScreen world={activeWorld} onReady={handleLoadingReady} />;
+  }
 
   const hour = s ? Math.floor((s.time * 24 + 6) % 24) : 0;
   const held = s?.slots[s.selected];
@@ -285,41 +346,86 @@ export function Game() {
             </div>
           )}
 
-          {!s.locked && s.ui === "none" && !s.dead && !showMultiplayerModal && (
-            <div
-              className="mc-overlay"
-              onClick={() => {
-                if (engine) engine.requestLock();
-              }}
-            >
-              <h1 className="mc-title">VOXELCRAFT</h1>
+          {!s.locked &&
+            s.ui === "none" &&
+            !s.dead &&
+            !showMultiplayerModal &&
+            !showSettingsModal && (
               <div
-                className="flex flex-col gap-3 items-center my-2"
-                onClick={(e) => e.stopPropagation()}
+                className="mc-overlay mc-overlay-soft"
+                onClick={() => {
+                  if (engine) engine.requestLock();
+                }}
               >
-                <Button variant="ghost" className="mc-button" onClick={() => engine?.requestLock()}>
-                  Jugar
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="mc-button"
-                  style={{ fontSize: "1.45rem", minWidth: "18rem" }}
-                  onClick={() => setShowMultiplayerModal(true)}
+                <div
+                  className="bg-[#262626] border-3 border-[#151515] shadow-[inset_2px_2px_0_#454545,inset_-2px_-2px_0_#101010,0_10px_35px_rgba(0,0,0,0.85)] p-6 flex flex-col items-center gap-4 max-w-sm w-full"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  🌐 Multijugador (Salas)
-                </Button>
+                  <h2 className="text-4xl font-bold text-white tracking-wider drop-shadow-[2px_2px_0_#000000]">
+                    JUEGO PAUSADO
+                  </h2>
+
+                  <div className="flex flex-col gap-2.5 w-full">
+                    <Button
+                      variant="ghost"
+                      className="mc-button w-full text-2xl py-2 min-w-0"
+                      onClick={() => {
+                        sfx.click();
+                        engine?.requestLock();
+                      }}
+                    >
+                      Reanudar juego
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      className="mc-button w-full text-2xl py-2 min-w-0"
+                      onClick={() => {
+                        sfx.click();
+                        setShowSettingsModal(true);
+                      }}
+                    >
+                      Ajustes
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      className="mc-button w-full text-2xl py-2 min-w-0"
+                      onClick={() => {
+                        sfx.click();
+                        setShowMultiplayerModal(true);
+                      }}
+                    >
+                      🌐 Multijugador
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      className="mc-button w-full text-2xl py-2 min-w-0 bg-[#873232] hover:bg-[#9e3a3a] text-white"
+                      onClick={handleSaveAndQuit}
+                    >
+                      Guardar y salir
+                    </Button>
+                  </div>
+
+                  <div className="text-center text-base text-neutral-300 opacity-80 mt-1">
+                    Mundo: <span className="font-bold text-white">{activeWorld?.name}</span> ·
+                    Semilla: {activeWorld?.seed}
+                  </div>
+                </div>
+
+                <div className="mc-help mt-2">
+                  <p>WASD mover · Espacio saltar · Ctrl correr · Shift agacharse</p>
+                  <p>Clic izq. picar/atacar · Clic der. colocar/comer/usar · E inventario</p>
+                </div>
               </div>
-              <div className="mc-help">
-                <p>WASD mover · Espacio saltar/nadar · Ctrl correr · Shift agacharse</p>
-                <p>
-                  Clic izq. (mantener) picar / talar / atacar · Clic der. colocar / comer / usar
-                  mesa y horno
-                </p>
-                <p>E inventario y crafteo · 1-9 / rueda elegir · Q soltar objeto</p>
-                <p>T chat · /admin cambiar texturas de bloques</p>
-                <p className="opacity-70">Texturas: Kenney Voxel Pack (CC0, dominio público)</p>
-              </div>
-            </div>
+            )}
+
+          {showSettingsModal && (
+            <SettingsMenu
+              onClose={() => setShowSettingsModal(false)}
+              onSettingsChanged={(newSettings) => engine?.applySettings(newSettings)}
+            />
           )}
 
           {showMultiplayerModal && engine && (
@@ -333,9 +439,22 @@ export function Game() {
           {s.dead && (
             <div className="mc-overlay mc-overlay-dead">
               <h1 className="mc-title">¡Has muerto!</h1>
-              <Button variant="ghost" className="mc-button" onClick={() => engine?.respawn()}>
-                Reaparecer
-              </Button>
+              <div className="flex flex-col gap-3">
+                <Button
+                  variant="ghost"
+                  className="mc-button text-2xl"
+                  onClick={() => engine?.respawn()}
+                >
+                  Reaparecer
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="mc-button text-2xl bg-[#602525] hover:bg-[#782e2e]"
+                  onClick={handleSaveAndQuit}
+                >
+                  Salir al menú principal
+                </Button>
+              </div>
             </div>
           )}
         </>

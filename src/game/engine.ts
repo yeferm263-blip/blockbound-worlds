@@ -15,6 +15,9 @@ import { sfx, startMusic, stopAudio, toggleMusic, preloadSounds, type Material }
 import { itemModel } from "./itemModel";
 import faithfulPng from "@/assets/faithful.png.asset.json";
 import faithful from "./packs/faithful.json";
+import { getSettings, type GameSettings } from "./settings";
+import { getStoredCustomSkin, getStoredPlayerName } from "./skinStorage";
+import type { WorldRecord } from "./worldsDb";
 
 const FA = faithful as { width: number; height: number; rects: Record<string, number[]> };
 function blockMat(id: number): Material {
@@ -283,34 +286,94 @@ export class Engine {
     }
   }
 
+  currentWorld: WorldRecord | null = null;
+  settings: GameSettings;
+  modifiedBlocksMap = new Map<string, { x: number; y: number; z: number; id: number }>();
+
+  recordModifiedBlock(x: number, y: number, z: number, id: number) {
+    this.modifiedBlocksMap.set(`${x},${y},${z}`, { x, y, z, id });
+  }
+
+  exportWorldData(): WorldRecord["worldData"] {
+    return {
+      playerPos: [this.player.pos.x, this.player.pos.y, this.player.pos.z],
+      playerYaw: this.yaw,
+      playerPitch: this.pitch,
+      inventory: [...this.state.slots],
+      hp: this.state.hp,
+      food: this.state.food,
+      time: this.time,
+      day: this.dayCount,
+      modifiedBlocks: Array.from(this.modifiedBlocksMap.values()),
+    };
+  }
+
+  getScreenshot(): string {
+    try {
+      return this.renderer.domElement.toDataURL("image/jpeg", 0.7);
+    } catch {
+      return "";
+    }
+  }
+
+  applySettings(newSettings: GameSettings) {
+    this.settings = newSettings;
+    this.camera.fov = newSettings.fov;
+    this.camera.updateProjectionMatrix();
+    if (this.scene.fog instanceof THREE.Fog) {
+      this.scene.fog.near = newSettings.renderDistance * CS * 0.55;
+      this.scene.fog.far = newSettings.renderDistance * CS * 0.95;
+    }
+  }
+
   constructor(
     public canvas: HTMLCanvasElement,
     seed = Math.floor(Math.random() * 1e9),
+    initialWorld?: WorldRecord | null,
   ) {
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: false,
+      preserveDrawingBuffer: true,
+    });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+    this.currentWorld = initialWorld ?? null;
+    this.settings = getSettings();
+    this.camera.fov = this.settings.fov;
+    this.camera.updateProjectionMatrix();
+    this.playerName = getStoredPlayerName();
+
+    const worldData = initialWorld?.worldData;
     this.state = {
-      slots: Array(36).fill(null),
+      slots: worldData?.inventory ? [...worldData.inventory] : Array(36).fill(null),
       selected: 0,
       cursor: null,
-      hp: 20,
-      food: 20,
+      hp: worldData?.hp ?? 20,
+      food: worldData?.food ?? 20,
       ui: "none",
-      mode: "survival",
+      mode: initialWorld?.gameMode || "survival",
       multiplayer: { connected: false, room: "", playerCount: 1 },
       station: null,
       grid: Array(9).fill(null),
       locked: false,
       dead: false,
-      time: this.time,
-      day: 1,
+      time: worldData?.time ?? this.time,
+      day: worldData?.day ?? 1,
       target: null,
       pos: [0, 0, 0],
       message: null,
       hurt: 0,
     };
-    this.seed = seed;
+    this.seed = initialWorld?.seed ?? seed;
+    this.time = this.state.time;
+    this.dayCount = this.state.day;
+
+    if (worldData?.modifiedBlocks) {
+      for (const mb of worldData.modifiedBlocks) {
+        this.modifiedBlocksMap.set(`${mb.x},${mb.y},${mb.z}`, mb);
+      }
+    }
   }
   seed: number;
 
@@ -330,7 +393,8 @@ export class Engine {
     this.atlas.colorSpace = THREE.SRGBColorSpace;
     this.world = new World(this.seed, this.atlas);
     this.scene.add(this.world.group, this.sun, this.sun.target, this.hemi, this.camera);
-    this.scene.fog = new THREE.Fog(0x9ccbff, RENDER * CS * 0.55, RENDER * CS * 0.95);
+    const rd = this.settings.renderDistance;
+    this.scene.fog = new THREE.Fog(0x9ccbff, rd * CS * 0.55, rd * CS * 0.95);
 
     // sun & moon (square, like the classic look)
     this.faTex = new THREE.TextureLoader().load(faithfulPng.url);
@@ -400,21 +464,41 @@ export class Engine {
     // spawn
     let sx = 0,
       sz = 0;
-    for (let i = 0; i < 200; i++) {
-      {
-        const bi = this.world.biome(sx, sz);
-        if (this.world.height(sx, sz) > 29 && (bi === "forest" || bi === "plains")) break;
+    const savedPos = this.currentWorld?.worldData?.playerPos;
+    const hasSavedPos = savedPos && (savedPos[0] !== 0 || savedPos[1] !== 0 || savedPos[2] !== 0);
+
+    if (hasSavedPos) {
+      sx = Math.floor(savedPos[0]);
+      sz = Math.floor(savedPos[2]);
+    } else {
+      for (let i = 0; i < 200; i++) {
+        {
+          const bi = this.world.biome(sx, sz);
+          if (this.world.height(sx, sz) > 29 && (bi === "forest" || bi === "plains")) break;
+        }
+        sx += 16;
+        sz += (i % 2) * 16;
       }
-      sx += 16;
-      sz += (i % 2) * 16;
     }
     const scx = Math.floor(sx / CS),
       scz = Math.floor(sz / CS);
     for (let dx = -2; dx <= 2; dx++)
       for (let dz = -2; dz <= 2; dz++) this.world.ensureChunk(scx + dx, scz + dz);
-    this.spawn.set(sx + 0.5, this.world.topY(sx, sz) + 1.01, sz + 0.5);
+
+    if (hasSavedPos && savedPos) {
+      this.spawn.set(savedPos[0], savedPos[1], savedPos[2]);
+      this.yaw = this.currentWorld?.worldData?.playerYaw ?? 0;
+      this.pitch = this.currentWorld?.worldData?.playerPitch ?? 0;
+    } else {
+      this.spawn.set(sx + 0.5, this.world.topY(sx, sz) + 1.01, sz + 0.5);
+    }
     this.player.pos.copy(this.spawn);
     this.fallStart = this.spawn.y;
+
+    // Apply any saved modified blocks
+    for (const mb of this.modifiedBlocksMap.values()) {
+      this.world.set(mb.x, mb.y, mb.z, mb.id);
+    }
     for (const c of this.world.chunks.values()) this.world.mesh(c);
 
     this.give("b5", 0); // nothing; ensure array alive
@@ -527,8 +611,10 @@ export class Engine {
     this.on(this.canvas, "contextmenu", (e: Event) => e.preventDefault());
     this.on(document, "mousemove", (e: MouseEvent) => {
       if (!this.state.locked) return;
-      this.yaw -= e.movementX * 0.0025;
-      this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch - e.movementY * 0.0025));
+      const sens = this.settings.mouseSensitivity;
+      this.yaw -= e.movementX * 0.0025 * sens;
+      const dy = e.movementY * 0.0025 * sens * (this.settings.invertY ? -1 : 1);
+      this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch - dy));
     });
     this.on(window, "wheel", (e: WheelEvent) => {
       if (this.state.locked) this.select((this.state.selected + (e.deltaY > 0 ? 1 : 8)) % 9);
@@ -1529,6 +1615,7 @@ export class Engine {
     }
     this.world.set(p.x, p.y, p.z, it.block);
     this.sendBlockChange(p.x, p.y, p.z, it.block);
+    this.recordModifiedBlock(p.x, p.y, p.z, it.block);
     for (const [dx, dz] of [
       [1, 0],
       [-1, 0],
@@ -1549,6 +1636,7 @@ export class Engine {
     if (drops && this.state.mode !== "creative") sfx.brk(blockMat(id));
     this.world.set(x, y, z, B.AIR);
     this.sendBlockChange(x, y, z, B.AIR);
+    this.recordModifiedBlock(x, y, z, B.AIR);
     if (drops && this.state.mode !== "creative") {
       let d = blockDrop(id);
       if (id === B.LEAVES && Math.random() < 0.06) d = "apple";
@@ -2164,7 +2252,7 @@ export class Engine {
         else m.rotation.set(0, -0.5, 0.1);
         this.hand.add(m);
       } else {
-        const arm = buildArm();
+        const arm = buildArm(getStoredCustomSkin() || undefined);
         arm.position.set(0.05, -0.05, 0.1);
         arm.rotation.set(-Math.PI / 2 + 0.2, 0.1, 0);
         this.hand.add(arm);
@@ -2183,8 +2271,9 @@ export class Engine {
     const p = this.player.vel;
     const speed = Math.min(1.5, Math.hypot(p.x, p.z) / 4.3);
     this.walkT += dt * speed * 9;
-    const bx = Math.sin(this.walkT) * 0.035 * speed,
-      by = -Math.abs(Math.cos(this.walkT)) * 0.03 * speed;
+    const bobbing = this.settings.viewBobbing;
+    const bx = bobbing ? Math.sin(this.walkT) * 0.035 * speed : 0,
+      by = bobbing ? -Math.abs(Math.cos(this.walkT)) * 0.03 * speed : 0;
     const t = 1 - this.handSwing; // 0..1 progress
     const s = this.handSwing > 0 ? Math.sin(t * Math.PI) : 0;
     const isSword = this.handItem && ITEMS[this.handItem]?.tool === "sword";
@@ -2203,10 +2292,11 @@ export class Engine {
 
   streamT = 0;
   stream() {
+    const renderDist = this.settings.renderDistance;
     const pcx = Math.floor(this.player.pos.x / CS),
       pcz = Math.floor(this.player.pos.z / CS);
     let gen = 0;
-    outer: for (let r = 0; r <= RENDER; r++)
+    outer: for (let r = 0; r <= renderDist; r++)
       for (let dx = -r; dx <= r; dx++)
         for (let dz = -r; dz <= r; dz++) {
           if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue;
@@ -2227,7 +2317,7 @@ export class Engine {
       );
     for (const c of list) {
       const d = Math.max(Math.abs(c.cx - pcx), Math.abs(c.cz - pcz));
-      if (d > RENDER) continue;
+      if (d > renderDist) continue;
       const near = d <= 1;
       if (!near && meshed >= 2) continue;
       // only mesh when all neighbours exist (avoids seams)
@@ -2245,7 +2335,7 @@ export class Engine {
       meshed++;
     }
     for (const c of this.world.chunks.values()) {
-      const vis = Math.max(Math.abs(c.cx - pcx), Math.abs(c.cz - pcz)) <= RENDER;
+      const vis = Math.max(Math.abs(c.cx - pcx), Math.abs(c.cz - pcz)) <= renderDist;
       if (c.mesh) c.mesh.visible = vis;
       if (c.water) c.water.visible = vis;
     }

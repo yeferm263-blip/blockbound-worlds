@@ -1,25 +1,47 @@
 // Original Minecraft sound samples (OGG, loaded from CDN) with tiny procedural fallbacks while loading.
 import SOUNDS_JSON from "./packs/sounds.json";
 
+import { getSettings } from "./settings";
+
 const SOUNDS = SOUNDS_JSON as Record<string, string[]>;
 let ctx: AudioContext | null = null;
 let master: GainNode, sfxBus: GainNode;
 let musicOn = true;
+let musicVol = 0.5;
 let musicTimer: ReturnType<typeof setTimeout> | null = null;
 let musicEl: HTMLAudioElement | null = null;
 
 export function audioCtx() {
   if (!ctx) {
     ctx = new AudioContext();
+    const settings = getSettings();
     master = ctx.createGain();
-    master.gain.value = 0.8;
+    master.gain.value = settings.masterVolume;
     master.connect(ctx.destination);
     sfxBus = ctx.createGain();
-    sfxBus.gain.value = 0.9;
+    sfxBus.gain.value = settings.sfxVolume;
     sfxBus.connect(master);
+    musicVol = settings.musicVolume;
   }
   if (ctx.state === "suspended") void ctx.resume();
   return ctx;
+}
+
+export function setMasterVolume(vol: number) {
+  audioCtx();
+  if (master) master.gain.value = Math.max(0, Math.min(1, vol));
+}
+
+export function setSfxVolume(vol: number) {
+  audioCtx();
+  if (sfxBus) sfxBus.gain.value = Math.max(0, Math.min(1, vol));
+}
+
+export function setMusicVolume(vol: number) {
+  musicVol = Math.max(0, Math.min(1, vol));
+  if (musicEl) {
+    musicEl.volume = musicVol * 0.7;
+  }
 }
 
 const bufs = new Map<string, AudioBuffer>();
@@ -151,6 +173,23 @@ export const sfx = {
       play("mob." + type, 0.8, 1.2);
     }
   },
+  click() {
+    try {
+      const c = audioCtx();
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(1250, c.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(350, c.currentTime + 0.025);
+      g.gain.setValueAtTime(0.35, c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.035);
+      osc.connect(g).connect(sfxBus);
+      osc.start();
+      osc.stop(c.currentTime + 0.04);
+    } catch {
+      // AudioContext might be blocked until gesture
+    }
+  },
 };
 
 // --- Music: original calm C418 tracks streamed, with long silent gaps like the real game ---
@@ -162,7 +201,7 @@ function nextTrack(delay: number) {
     const list = SOUNDS["music"] ?? [];
     if (!list.length) return;
     musicEl = new Audio(list[Math.floor(Math.random() * list.length)]);
-    musicEl.volume = 0.35;
+    musicEl.volume = Math.max(0, Math.min(1, musicVol * 0.7));
     musicEl.onended = () => nextTrack(60_000 + Math.random() * 120_000);
     void musicEl.play().catch(() => nextTrack(5000));
   }, delay);
