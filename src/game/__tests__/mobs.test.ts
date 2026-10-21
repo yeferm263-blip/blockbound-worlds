@@ -17,11 +17,22 @@ describe("attached animal limbs", () => {
       }
     });
   }
+  for (const type of ["pig", "cow", "sheep", "creeper"] as MobType[]) {
+    it(`${type} legs overlap into the torso so no gap shows at the hip`, () => {
+      const model = buildMob(type);
+      model.root.updateWorldMatrix(true, true);
+      const body = new THREE.Box3().setFromObject(model.body!);
+      for (const leg of model.legs) {
+        const legBox = new THREE.Box3().setFromObject(leg.children[0]);
+        expect(legBox.max.y).toBeGreaterThan(body.min.y + 1 / 16);
+      }
+    });
+  }
   it("pig walks with opposite diagonal pairs without moving its torso independently", () => {
     const model = buildMob("pig");
     const y = model.body?.position.y;
     animateMobGait(model, "pig", Math.PI / 2, 1, 0);
-    expect(model.legs.map((leg) => leg.rotation.x)).toEqual([0.7, -0.7, -0.7, 0.7]);
+    expect(model.legs.map((leg) => leg.rotation.x)).toEqual([0.5, -0.5, -0.5, 0.5]);
     expect(model.body?.position.y).toBe(y);
   });
 });
