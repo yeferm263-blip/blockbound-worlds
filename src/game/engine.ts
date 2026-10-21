@@ -209,6 +209,11 @@ export class Engine {
   >();
   lastMultiplayerSync = 0;
   onChatMessage?: (msg: string) => void;
+  httpSyncTimer: ReturnType<typeof setInterval> | null = null;
+  lastHttpEventId = 0;
+  pendingBlockChanges: { x: number; y: number; z: number; id: number }[] = [];
+  pendingChats: string[] = [];
+  isHttpSyncing = false;
   lastUnlockTime = 0;
   lockRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -659,9 +664,38 @@ export class Engine {
       const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
       const url = `${proto}//${window.location.host}/ws/multiplayer`;
 
+      let settled = false;
+      let wsFailed = false;
+
+      const fallbackToHttp = async () => {
+        if (wsFailed) return;
+        wsFailed = true;
+        if (this.ws) {
+          try {
+            this.ws.onclose = null;
+            this.ws.onerror = null;
+            this.ws.close();
+          } catch {
+            // Ignore close errors
+          }
+          this.ws = null;
+        }
+        const ok = await this.connectHttpMultiplayer(code, this.playerName);
+        if (!settled) {
+          settled = true;
+          resolve(ok);
+        }
+      };
+
       try {
         const ws = new WebSocket(url);
         this.ws = ws;
+
+        const timer = setTimeout(() => {
+          if (!this.multiplayerPlayerId) {
+            fallbackToHttp();
+          }
+        }, 1200);
 
         ws.onopen = () => {
           ws.send(
@@ -681,6 +715,7 @@ export class Engine {
           try {
             const msg = JSON.parse(event.data);
             if (msg.type === "joined") {
+              clearTimeout(timer);
               this.multiplayerRoom = msg.room;
               this.multiplayerPlayerId = msg.id;
               this.state.multiplayer = {
@@ -693,7 +728,7 @@ export class Engine {
                   this.world.set(bc.x, bc.y, bc.z, bc.id);
                 }
                 for (const ch of this.world.chunks.values()) {
-                  this.world.meshChunk(ch);
+                  this.world.mesh(ch);
                 }
               }
               if (Array.isArray(msg.players)) {
@@ -703,7 +738,10 @@ export class Engine {
               }
               this.toast(`Conectado a sala ${msg.room}`);
               this.emit();
-              resolve(true);
+              if (!settled) {
+                settled = true;
+                resolve(true);
+              }
             } else if (msg.type === "player_joined") {
               const p = msg.player;
               this.addRemotePlayer(p.id, p.name, p.pos, p.yaw, p.pitch, p.held);
@@ -727,7 +765,7 @@ export class Engine {
               if (msg.by !== this.multiplayerPlayerId) {
                 this.world.set(msg.x, msg.y, msg.z, msg.id);
                 const ch = this.world.getChunk(Math.floor(msg.x / CS), Math.floor(msg.z / CS));
-                if (ch) this.world.meshChunk(ch);
+                if (ch) this.world.mesh(ch);
               }
             } else if (msg.type === "chat") {
               if (this.onChatMessage) {
@@ -746,33 +784,213 @@ export class Engine {
           }
         };
 
-        ws.onerror = (err) => {
-          console.error("Multiplayer WS error:", err);
-          resolve(false);
+        ws.onerror = () => {
+          clearTimeout(timer);
+          fallbackToHttp();
         };
 
         ws.onclose = () => {
-          this.disconnectMultiplayer();
+          if (!this.multiplayerPlayerId) {
+            clearTimeout(timer);
+            fallbackToHttp();
+          } else {
+            this.disconnectMultiplayer();
+          }
         };
-      } catch (err) {
-        console.error("Multiplayer connect error:", err);
-        resolve(false);
+      } catch {
+        fallbackToHttp();
       }
     });
+  }
+
+  async connectHttpMultiplayer(roomCode: string, name: string): Promise<boolean> {
+    try {
+      const res = await fetch("/api/multiplayer/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          room: roomCode,
+          name,
+          pos: [this.player.pos.x, this.player.pos.y, this.player.pos.z],
+          yaw: this.yaw,
+          pitch: this.pitch,
+          seed: this.seed,
+        }),
+      });
+
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (!data.ok) return false;
+
+      this.multiplayerRoom = data.room;
+      this.multiplayerPlayerId = data.id;
+      this.lastHttpEventId = data.lastEventId || 0;
+      this.state.multiplayer = {
+        connected: true,
+        room: data.room,
+        playerCount: (data.players?.length || 0) + 1,
+      };
+
+      if (Array.isArray(data.blockChanges)) {
+        for (const bc of data.blockChanges) {
+          this.world.set(bc.x, bc.y, bc.z, bc.id);
+        }
+        for (const ch of this.world.chunks.values()) {
+          this.world.mesh(ch);
+        }
+      }
+
+      if (Array.isArray(data.players)) {
+        for (const p of data.players) {
+          this.addRemotePlayer(p.id, p.name, p.pos, p.yaw, p.pitch, p.held);
+        }
+      }
+
+      this.toast(`Conectado a sala ${data.room}`);
+      this.emit();
+
+      // Start periodic realtime sync loop (100ms)
+      this.httpSyncTimer = window.setInterval(() => this.syncHttpMultiplayer(), 100);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async syncHttpMultiplayer() {
+    if (!this.multiplayerRoom || !this.multiplayerPlayerId || this.isHttpSyncing) return;
+    this.isHttpSyncing = true;
+
+    try {
+      const blockChanges = this.pendingBlockChanges.splice(0, this.pendingBlockChanges.length);
+      const chats = this.pendingChats.splice(0, this.pendingChats.length);
+
+      const res = await fetch("/api/multiplayer/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          room: this.multiplayerRoom,
+          playerId: this.multiplayerPlayerId,
+          name: this.playerName,
+          pos: [this.player.pos.x, this.player.pos.y, this.player.pos.z],
+          yaw: this.yaw,
+          pitch: this.pitch,
+          swing: this.handSwing,
+          held: this.held(),
+          hp: this.state.hp,
+          blockChanges,
+          chats,
+          lastEventId: this.lastHttpEventId,
+        }),
+      });
+
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data.ok) return;
+
+      if (data.lastEventId) {
+        this.lastHttpEventId = data.lastEventId;
+      }
+
+      // Update positions of existing or newly seen players
+      if (Array.isArray(data.players)) {
+        for (const p of data.players) {
+          let rp = this.remotePlayers.get(p.id);
+          if (!rp) {
+            this.addRemotePlayer(p.id, p.name, p.pos, p.yaw, p.pitch, p.held);
+            rp = this.remotePlayers.get(p.id);
+          }
+          if (rp) {
+            rp.targetPos.set(p.pos[0], p.pos[1], p.pos[2]);
+            rp.targetYaw = p.yaw;
+            rp.pitch = p.pitch;
+            if (p.swing && rp.model.arms[1]) {
+              rp.model.arms[1].rotation.x = (-Math.PI / 2) * p.swing;
+            }
+            rp.heldId = p.held;
+          }
+        }
+      }
+
+      // Process new events (joins, leaves, block changes, chats)
+      if (Array.isArray(data.events)) {
+        for (const ev of data.events) {
+          if (ev.type === "player_joined" && ev.data?.player) {
+            const p = ev.data.player;
+            if (p.id !== this.multiplayerPlayerId) {
+              this.addRemotePlayer(p.id, p.name, p.pos, p.yaw, p.pitch, p.held);
+              this.toast(`[+] ${p.name} se unió`);
+            }
+          } else if (ev.type === "player_left" && ev.data) {
+            this.removeRemotePlayer(ev.data.id);
+            this.toast(`[-] ${ev.data.name} salió`);
+          } else if (ev.type === "block_change" && ev.data) {
+            if (ev.data.by !== this.multiplayerPlayerId) {
+              this.world.set(ev.data.x, ev.data.y, ev.data.z, ev.data.id);
+              const ch = this.world.getChunk(Math.floor(ev.data.x / CS), Math.floor(ev.data.z / CS));
+              if (ch) this.world.mesh(ch);
+            }
+          } else if (ev.type === "chat" && ev.data) {
+            if (this.onChatMessage) {
+              this.onChatMessage(`<${ev.data.from}> ${ev.data.text}`);
+            }
+          }
+        }
+      }
+
+      if (this.state.multiplayer) {
+        const count = this.remotePlayers.size + 1;
+        if (this.state.multiplayer.playerCount !== count) {
+          this.state.multiplayer.playerCount = count;
+          this.emit();
+        }
+      }
+    } catch {
+      // Ignore transient network errors
+    } finally {
+      this.isHttpSyncing = false;
+    }
   }
 
   disconnectMultiplayer() {
     if (this.ws) {
       try {
+        this.ws.onclose = null;
+        this.ws.onerror = null;
         this.ws.close();
       } catch {
         // Ignore websocket close errors
       }
       this.ws = null;
     }
+
+    if (this.httpSyncTimer) {
+      clearInterval(this.httpSyncTimer);
+      this.httpSyncTimer = null;
+    }
+
+    if (this.multiplayerRoom && this.multiplayerPlayerId) {
+      try {
+        fetch("/api/multiplayer/leave", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            room: this.multiplayerRoom,
+            playerId: this.multiplayerPlayerId,
+          }),
+        }).catch(() => {});
+      } catch {
+        // Ignore leave errors
+      }
+    }
+
     for (const id of [...this.remotePlayers.keys()]) {
       this.removeRemotePlayer(id);
     }
+    this.multiplayerRoom = null;
+    this.multiplayerPlayerId = null;
+    this.pendingBlockChanges = [];
+    this.pendingChats = [];
     this.state.multiplayer = { connected: false, room: "", playerCount: 1 };
     this.emit();
   }
@@ -788,6 +1006,8 @@ export class Engine {
           id,
         }),
       );
+    } else if (this.multiplayerPlayerId) {
+      this.pendingBlockChanges.push({ x, y, z, id });
     }
   }
 
@@ -799,6 +1019,8 @@ export class Engine {
           text,
         }),
       );
+    } else if (this.multiplayerPlayerId) {
+      this.pendingChats.push(text);
     }
   }
 
@@ -1497,7 +1719,7 @@ export class Engine {
         }
     // Immediately remesh all affected chunks so the crater appears instantly
     for (const ch of affectedChunks) {
-      this.world.meshChunk(ch);
+      this.world.mesh(ch);
     }
     const dist = this.player.pos.distanceTo(c);
     if (dist < r * 2.2) {
