@@ -160,7 +160,7 @@ export function buildMob(type: MobType): MobModel {
       body = cube(root, 8, 12, 4, 16, 16, 0, 12, 0);
       head = pivot(0, 18, 0);
       cube(head, 8, 8, 8, 0, 0, 0, 4, 0);
-      for (const [x, z] of [[-2, 4], [2, 4], [-2, -4], [2, -4]]) cube(pivot(x, 6, z, legs), 4, 6, 4, 0, 16, 0, -3, 0);
+      for (const [x, z] of [[-2, 2], [2, 2], [-2, -2], [2, -2]]) cube(pivot(x, 6, z, legs), 4, 6, 4, 0, 16, 0, -3, 0);
       break;
     }
     case "spider": {

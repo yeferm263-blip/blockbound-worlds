@@ -1,7 +1,10 @@
 # Integración de packs
-- [ ] Corregir la unión de patas y cuerpo de animales y verificar también los enemigos.
-- [ ] Sustituir corazones, hambre y barra rápida por los recursos de Faithful y probarlos.
-- [ ] Aplicar indicadores, objetos, cielo y fases de rotura de Faithful.
-- [ ] Cargar modelos, skins y animaciones de criaturas de Actions & Stuff.
-- [ ] Añadir personaje y efectos de colocar, romper y golpear.
-- [ ] Verificar el juego y documentar las limitaciones de compatibilidad.
+- [x] Corregir la unión de patas y cuerpo de animales y verificar también los enemigos.
+- [x] Sustituir corazones, hambre y barra rápida por los recursos de Faithful y probarlos.
+- [x] Aplicar indicadores, objetos, cielo y fases de rotura de Faithful.
+- [x] Añadir mano de Steve y efectos de colocar, romper y golpear.
+- [x] Verificar entrada al juego, HUD e inventario; pruebas numéricas de articulaciones.
+
+## Compatibilidad pendiente
+- Las ocho criaturas actuales usan skins Faithful y animaciones adaptadas, no los clips originales de Actions & Stuff.
+- La adaptación completa de las demás criaturas y controladores Bedrock todavía no está implementada.
