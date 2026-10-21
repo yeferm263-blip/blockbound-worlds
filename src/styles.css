@@ -194,24 +194,32 @@
     min-width: 18rem;
     padding: 0.5rem 1rem;
     font-size: 1.75rem;
-    color: var(--mc-text);
-    background: var(--mc-slot);
-    border: 3px solid var(--mc-slot-dark);
-    box-shadow:
-      inset 2px 2px 0 var(--mc-panel-light),
-      inset -2px -2px 0 var(--mc-panel-dark);
-    text-shadow: 2px 2px 0 var(--mc-shadow);
+    color: #ffffff;
+    border: 4px solid transparent;
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/button.png") 4 fill / 4px stretch;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    text-shadow: 2px 2px 0 #1b1b1b;
     cursor: pointer;
     transition: transform 0.05s ease-out;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
   .mc-button:hover {
-    outline: 3px solid var(--mc-text);
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/button_highlighted.png") 4 fill / 4px stretch;
+    color: #ffffa0;
   }
   .mc-button:active {
-    box-shadow:
-      inset -2px -2px 0 var(--mc-panel-light),
-      inset 2px 2px 0 var(--mc-panel-dark);
     transform: translateY(2px);
+  }
+  .mc-button:disabled {
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/button_disabled.png") 4 fill / 4px stretch;
+    color: #a0a0a0;
+    cursor: not-allowed;
+    transform: none;
   }
   .mc-help {
     text-align: center;
@@ -554,10 +562,11 @@
     padding: 1.5rem;
   }
   .mc-input-field {
-    background: var(--mc-slot-dark);
-    color: var(--mc-text);
-    border: 2px solid #000;
-    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.6);
+    background: transparent;
+    color: #ffffff;
+    border: 3px solid transparent;
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/text_field.png") 3 fill / 3px stretch;
+    image-rendering: pixelated;
     padding: 0.5rem 0.75rem;
     font-size: 1.25rem;
     font-family: inherit;
@@ -565,8 +574,7 @@
     width: 100%;
   }
   .mc-input-field:focus {
-    border-color: var(--mc-text);
-    outline: 1px solid var(--mc-text);
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/text_field_highlighted.png") 3 fill / 3px stretch;
   }
   .mc-badge-btn {
     background: color-mix(in oklab, var(--mc-slot) 80%, black);
@@ -585,29 +593,142 @@
     outline: 2px solid var(--mc-text);
   }
 
-  /* Bedrock Edition Dirt Background Pattern */
+  /* Authentic Resource Pack Dirt Background Pattern */
   .mc-dirt-bg {
     background-color: #241910;
-    background-image:
-      radial-gradient(#3a2618 15%, transparent 16%), radial-gradient(#4d3421 15%, transparent 16%),
-      linear-gradient(
-        45deg,
-        #241910 25%,
-        #2c1e13 25%,
-        #2c1e13 50%,
-        #241910 50%,
-        #241910 75%,
-        #2c1e13 75%,
-        #2c1e13 100%
-      );
-    background-size:
-      16px 16px,
-      16px 16px,
-      32px 32px;
-    background-position:
-      0 0,
-      8px 8px,
-      0 0;
+    background-image: url("/resourcepack/assets/minecraft/textures/gui/menu_background.png");
+    background-repeat: repeat;
+    background-size: 64px 64px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* In-world menu dark background */
+  .mc-inworld-bg {
+    background-color: #141414;
+    background-image: url("/resourcepack/assets/minecraft/textures/gui/inworld_menu_background.png");
+    background-repeat: repeat;
+    background-size: 64px 64px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* Separator lines from resource pack */
+  .mc-header-sep {
+    background-image: url("/resourcepack/assets/minecraft/textures/gui/header_separator.png");
+    background-repeat: repeat-x;
+    background-size: 64px 4px;
+    height: 4px;
+    width: 100%;
+    image-rendering: pixelated;
+  }
+
+  .mc-footer-sep {
+    background-image: url("/resourcepack/assets/minecraft/textures/gui/footer_separator.png");
+    background-repeat: repeat-x;
+    background-size: 64px 4px;
+    height: 4px;
+    width: 100%;
+    image-rendering: pixelated;
+  }
+
+  .mc-inworld-header-sep {
+    background-image: url("/resourcepack/assets/minecraft/textures/gui/inworld_header_separator.png");
+    background-repeat: repeat-x;
+    background-size: 64px 4px;
+    height: 4px;
+    width: 100%;
+    image-rendering: pixelated;
+  }
+
+  .mc-inworld-footer-sep {
+    background-image: url("/resourcepack/assets/minecraft/textures/gui/inworld_footer_separator.png");
+    background-repeat: repeat-x;
+    background-size: 64px 4px;
+    height: 4px;
+    width: 100%;
+    image-rendering: pixelated;
+  }
+
+  /* Cross button from resource pack */
+  .mc-cross-btn {
+    width: 28px;
+    height: 28px;
+    background-color: transparent;
+    background-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/cross_button.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    image-rendering: pixelated;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    display: inline-block;
+  }
+  .mc-cross-btn:hover {
+    background-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/cross_button_highlighted.png");
+  }
+
+  /* Authentic widget tab from resource pack */
+  .mc-tab {
+    border: 4px solid transparent;
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/tab.png") 4 fill / 4px stretch;
+    image-rendering: pixelated;
+    color: #c0c0c0;
+    cursor: pointer;
+    background: transparent;
+    transition: transform 0.05s ease-out;
+  }
+  .mc-tab:hover {
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/tab_highlighted.png") 4 fill / 4px stretch;
+    color: #ffffff;
+  }
+  .mc-tab-selected {
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/tab_selected.png") 4 fill / 4px stretch;
+    color: #ffffa0;
+  }
+
+  /* Authentic resource pack sliders */
+  .mc-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 32px;
+    background: transparent;
+    border: 3px solid transparent;
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/slider.png") 3 fill / 3px stretch;
+    image-rendering: pixelated;
+    cursor: pointer;
+    outline: none;
+  }
+  .mc-slider:hover {
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/slider_highlighted.png") 3 fill / 3px stretch;
+  }
+  .mc-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 26px;
+    background-color: transparent;
+    border: 2px solid transparent;
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/slider_handle.png") 2 fill / 2px stretch;
+    image-rendering: pixelated;
+    cursor: pointer;
+  }
+  .mc-slider::-webkit-slider-thumb:hover {
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/slider_handle_highlighted.png") 2 fill / 2px stretch;
+  }
+  .mc-slider::-moz-range-thumb {
+    width: 16px;
+    height: 26px;
+    background-color: transparent;
+    border: 2px solid transparent;
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/slider_handle.png") 2 fill / 2px stretch;
+    image-rendering: pixelated;
+    cursor: pointer;
+  }
+  .mc-slider::-moz-range-thumb:hover {
+    border-image: url("/resourcepack/assets/minecraft/textures/gui/sprites/widget/slider_handle_highlighted.png") 2 fill / 2px stretch;
   }
 
   /* Bedrock 3D Title */

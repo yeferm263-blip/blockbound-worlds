@@ -33,34 +33,32 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
       }}
     >
       <div
-        className="w-full max-w-2xl bg-[#282828] border-3 border-[#1a1a1a] shadow-[inset_2px_2px_0_#505050,inset_-2px_-2px_0_#151515,0_10px_30px_rgba(0,0,0,0.85)] p-6 flex flex-col max-h-[90vh]"
+        className="w-full max-w-2xl mc-dirt-bg border-3 border-[#1a1a1a] shadow-[inset_2px_2px_0_#505050,inset_-2px_-2px_0_#151515,0_10px_30px_rgba(0,0,0,0.85)] p-6 flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b-2 border-black/40 pb-3 mb-4">
+        <div className="flex items-center justify-between pb-2">
           <h2 className="text-3xl md:text-4xl font-bold text-white tracking-wider drop-shadow-[2px_2px_0_#000000] flex items-center gap-2">
             <span>⚙️</span> AJUSTES DEL JUEGO
           </h2>
           <button
             type="button"
-            className="mc-badge-btn text-xl px-3 py-1 text-white hover:bg-red-700"
+            className="mc-cross-btn"
             onClick={() => {
               sfx.click();
               onClose();
             }}
-          >
-            ✕
-          </button>
+            title="Cerrar"
+          />
         </div>
+        <div className="mc-header-sep mb-4" />
 
         {/* Tabs Bar */}
-        <div className="grid grid-cols-3 gap-2 mb-6">
+        <div className="grid grid-cols-3 gap-2 mb-4">
           <button
             type="button"
-            className={`py-2 text-2xl font-bold tracking-wide transition-all border-2 border-black shadow-[2px_2px_0_#000000] ${
-              activeTab === "audio"
-                ? "bg-[#4a8a3a] text-yellow-200 border-yellow-300"
-                : "bg-[#454545] text-neutral-300 hover:bg-[#555555]"
+            className={`mc-tab py-2 text-2xl font-bold tracking-wide min-w-0 ${
+              activeTab === "audio" ? "mc-tab-selected" : ""
             }`}
             onClick={() => {
               sfx.click();
@@ -71,10 +69,8 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
           </button>
           <button
             type="button"
-            className={`py-2 text-2xl font-bold tracking-wide transition-all border-2 border-black shadow-[2px_2px_0_#000000] ${
-              activeTab === "video"
-                ? "bg-[#4a8a3a] text-yellow-200 border-yellow-300"
-                : "bg-[#454545] text-neutral-300 hover:bg-[#555555]"
+            className={`mc-tab py-2 text-2xl font-bold tracking-wide min-w-0 ${
+              activeTab === "video" ? "mc-tab-selected" : ""
             }`}
             onClick={() => {
               sfx.click();
@@ -85,10 +81,8 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
           </button>
           <button
             type="button"
-            className={`py-2 text-2xl font-bold tracking-wide transition-all border-2 border-black shadow-[2px_2px_0_#000000] ${
-              activeTab === "controls"
-                ? "bg-[#4a8a3a] text-yellow-200 border-yellow-300"
-                : "bg-[#454545] text-neutral-300 hover:bg-[#555555]"
+            className={`mc-tab py-2 text-2xl font-bold tracking-wide min-w-0 ${
+              activeTab === "controls" ? "mc-tab-selected" : ""
             }`}
             onClick={() => {
               sfx.click();
@@ -118,7 +112,7 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
                   step="0.05"
                   value={settings.masterVolume}
                   onChange={(e) => updateSetting("masterVolume", parseFloat(e.target.value))}
-                  className="w-full accent-[#55ff55] h-3 bg-neutral-700 cursor-pointer"
+                  className="mc-slider"
                 />
               </div>
 
@@ -137,7 +131,7 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
                   step="0.05"
                   value={settings.musicVolume}
                   onChange={(e) => updateSetting("musicVolume", parseFloat(e.target.value))}
-                  className="w-full accent-[#55ff55] h-3 bg-neutral-700 cursor-pointer"
+                  className="mc-slider"
                 />
               </div>
 
@@ -156,7 +150,7 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
                   step="0.05"
                   value={settings.sfxVolume}
                   onChange={(e) => updateSetting("sfxVolume", parseFloat(e.target.value))}
-                  className="w-full accent-[#55ff55] h-3 bg-neutral-700 cursor-pointer"
+                  className="mc-slider"
                 />
               </div>
             </div>
@@ -177,10 +171,8 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
                     <button
                       key={chunks}
                       type="button"
-                      className={`py-2 text-xl font-bold border-2 border-black ${
-                        settings.renderDistance === chunks
-                          ? "bg-[#55aa44] text-white"
-                          : "bg-[#383838] text-neutral-300 hover:bg-[#484848]"
+                      className={`mc-button min-w-0 py-1.5 text-xl font-bold ${
+                        settings.renderDistance === chunks ? "text-yellow-200" : ""
                       }`}
                       onClick={() => updateSetting("renderDistance", chunks)}
                     >
@@ -205,7 +197,7 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
                   step="5"
                   value={settings.fov}
                   onChange={(e) => updateSetting("fov", parseInt(e.target.value, 10))}
-                  className="w-full accent-[#55ff55] h-3 bg-neutral-700 cursor-pointer"
+                  className="mc-slider"
                 />
               </div>
 
@@ -219,11 +211,7 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
                 </div>
                 <button
                   type="button"
-                  className={`px-6 py-2 text-xl font-bold border-2 border-black min-w-[8rem] ${
-                    settings.viewBobbing
-                      ? "bg-[#4a8a3a] text-yellow-200"
-                      : "bg-[#555555] text-neutral-400"
-                  }`}
+                  className="mc-button min-w-[7rem] py-1 text-xl font-bold"
                   onClick={() => updateSetting("viewBobbing", !settings.viewBobbing)}
                 >
                   {settings.viewBobbing ? "SÍ" : "NO"}
@@ -249,7 +237,7 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
                   step="0.1"
                   value={settings.mouseSensitivity}
                   onChange={(e) => updateSetting("mouseSensitivity", parseFloat(e.target.value))}
-                  className="w-full accent-[#55ff55] h-3 bg-neutral-700 cursor-pointer"
+                  className="mc-slider"
                 />
               </div>
 
@@ -263,11 +251,7 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
                 </div>
                 <button
                   type="button"
-                  className={`px-6 py-2 text-xl font-bold border-2 border-black min-w-[8rem] ${
-                    settings.invertY
-                      ? "bg-[#4a8a3a] text-yellow-200"
-                      : "bg-[#555555] text-neutral-400"
-                  }`}
+                  className="mc-button min-w-[7rem] py-1 text-xl font-bold"
                   onClick={() => updateSetting("invertY", !settings.invertY)}
                 >
                   {settings.invertY ? "SÍ" : "NO"}
@@ -287,7 +271,8 @@ export function SettingsMenu({ onClose, onSettingsChanged }: SettingsMenuProps) 
         </div>
 
         {/* Footer Done Button */}
-        <div className="pt-4 border-t-2 border-black/30 flex justify-end">
+        <div className="mc-footer-sep my-3" />
+        <div className="flex justify-end">
           <button
             type="button"
             className="mc-button min-w-[12rem] py-2 text-2xl"

@@ -83,25 +83,25 @@ export function ProfileModal({ onClose, onSkinChanged, onNameChanged }: ProfileM
       }}
     >
       <div
-        className="w-full max-w-3xl bg-[#282828] border-3 border-[#1a1a1a] shadow-[inset_2px_2px_0_#505050,inset_-2px_-2px_0_#151515,0_10px_30px_rgba(0,0,0,0.85)] p-6 flex flex-col max-h-[92vh]"
+        className="w-full max-w-3xl mc-dirt-bg border-3 border-[#1a1a1a] shadow-[inset_2px_2px_0_#505050,inset_-2px_-2px_0_#151515,0_10px_30px_rgba(0,0,0,0.85)] p-6 flex flex-col max-h-[92vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b-2 border-black/40 pb-3 mb-4">
+        <div className="flex items-center justify-between pb-2">
           <h2 className="text-3xl md:text-4xl font-bold text-white tracking-wider drop-shadow-[2px_2px_0_#000000] flex items-center gap-2">
             <span>👕</span> VESTIDOR Y PERFIL
           </h2>
           <button
             type="button"
-            className="mc-badge-btn text-xl px-3 py-1 text-white hover:bg-red-700"
+            className="mc-cross-btn"
             onClick={() => {
               sfx.click();
               onClose();
             }}
-          >
-            ✕
-          </button>
+            title="Cerrar"
+          />
         </div>
+        <div className="mc-header-sep mb-4" />
 
         {/* Content Body */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 overflow-y-auto">
@@ -197,7 +197,8 @@ export function ProfileModal({ onClose, onSkinChanged, onNameChanged }: ProfileM
         </div>
 
         {/* Footer */}
-        <div className="pt-4 border-t-2 border-black/30 flex justify-end">
+        <div className="mc-footer-sep my-3" />
+        <div className="flex justify-end">
           <button
             type="button"
             className="mc-button min-w-[12rem] py-2 text-2xl"

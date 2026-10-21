@@ -358,12 +358,13 @@ export function Game() {
                 }}
               >
                 <div
-                  className="bg-[#262626] border-3 border-[#151515] shadow-[inset_2px_2px_0_#454545,inset_-2px_-2px_0_#101010,0_10px_35px_rgba(0,0,0,0.85)] p-6 flex flex-col items-center gap-4 max-w-sm w-full"
+                  className="mc-inworld-bg border-3 border-[#151515] shadow-[inset_2px_2px_0_#454545,inset_-2px_-2px_0_#101010,0_10px_35px_rgba(0,0,0,0.85)] p-6 flex flex-col items-center gap-4 max-w-sm w-full"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <h2 className="text-4xl font-bold text-white tracking-wider drop-shadow-[2px_2px_0_#000000]">
                     JUEGO PAUSADO
                   </h2>
+                  <div className="mc-inworld-header-sep" />
 
                   <div className="flex flex-col gap-2.5 w-full">
                     <Button
@@ -408,6 +409,7 @@ export function Game() {
                     </Button>
                   </div>
 
+                  <div className="mc-inworld-footer-sep" />
                   <div className="text-center text-base text-neutral-300 opacity-80 mt-1">
                     Mundo: <span className="font-bold text-white">{activeWorld?.name}</span> ·
                     Semilla: {activeWorld?.seed}

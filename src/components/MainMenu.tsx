@@ -71,6 +71,14 @@ export function MainMenu({ onStartWorld, onJoinServer }: MainMenuProps) {
                 VOXELCRAFT
               </h1>
 
+              {/* Minecraft Edition Badge from Resource Pack */}
+              <img
+                src="/resourcepack/assets/minecraft/textures/gui/title/edition.png"
+                alt="Bedrock Edition"
+                className="h-5 sm:h-7 mx-auto mt-1 pointer-events-none drop-shadow-[2px_2px_0_#000000]"
+                style={{ imageRendering: "pixelated" }}
+              />
+
               {/* Oscillating Bouncing Splash Text */}
               <div className="absolute -bottom-4 right-0 sm:-right-8 md:-right-12 z-20 mc-splash-text text-xl sm:text-2xl md:text-3xl font-bold text-yellow-300 drop-shadow-[2px_2px_0_#000000]">
                 {splash}

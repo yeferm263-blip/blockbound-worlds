@@ -65,7 +65,7 @@ export function LoadingScreen({ world, onReady }: LoadingScreenProps) {
       }}
     >
       {/* Top World Header */}
-      <div className="text-center mt-6">
+      <div className="w-full max-w-2xl flex flex-col items-center mt-6">
         <h2 className="text-4xl md:text-5xl font-bold text-white tracking-wider drop-shadow-[3px_3px_0_#000000]">
           {world.name}
         </h2>
@@ -73,6 +73,7 @@ export function LoadingScreen({ world, onReady }: LoadingScreenProps) {
           Modo: {world.gameMode === "creative" ? "Creativo" : "Supervivencia"} · Semilla:{" "}
           {world.seed}
         </p>
+        <div className="mc-header-sep mt-4" />
       </div>
 
       {/* Center Bedrock Progress Box */}
@@ -95,13 +96,16 @@ export function LoadingScreen({ world, onReady }: LoadingScreenProps) {
       </div>
 
       {/* Bottom Classic Tip Box */}
-      <div className="max-w-2xl text-center px-6 py-3 bg-black/60 border-2 border-neutral-700/80 rounded shadow-lg mb-4">
-        <p className="text-sm md:text-base text-yellow-400 font-bold uppercase tracking-wider mb-1">
-          Consejo:
-        </p>
-        <p className="text-xl md:text-2xl text-neutral-100 italic leading-relaxed drop-shadow-[2px_2px_0_#000000]">
-          "{tip}"
-        </p>
+      <div className="w-full max-w-2xl flex flex-col items-center mb-4">
+        <div className="mc-footer-sep mb-4" />
+        <div className="w-full text-center px-6 py-3 bg-black/60 border-2 border-neutral-700/80 rounded shadow-lg">
+          <p className="text-sm md:text-base text-yellow-400 font-bold uppercase tracking-wider mb-1">
+            Consejo:
+          </p>
+          <p className="text-xl md:text-2xl text-neutral-100 italic leading-relaxed drop-shadow-[2px_2px_0_#000000]">
+            "{tip}"
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -88,9 +88,9 @@ export function WorldsMenu({ onSelectWorld, onJoinServer, onBack }: WorldsMenuPr
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col font-pixel select-none bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-40 flex flex-col font-pixel select-none mc-dirt-bg animate-in fade-in duration-200">
       {/* Top Header & Tabs Bar */}
-      <div className="bg-[#1f1f1f] border-b-3 border-[#121212] px-6 py-4 flex items-center justify-between shadow-md">
+      <div className="bg-[#1f1f1f]/90 px-6 py-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -111,10 +111,8 @@ export function WorldsMenu({ onSelectWorld, onJoinServer, onBack }: WorldsMenuPr
         <div className="flex items-center gap-2">
           <button
             type="button"
-            className={`px-6 py-1.5 text-2xl font-bold tracking-wide border-2 border-black transition-all ${
-              activeTab === "worlds"
-                ? "bg-[#4a8a3a] text-yellow-200 border-yellow-300 shadow-[2px_2px_0_#000000]"
-                : "bg-[#3c3c3c] text-neutral-300 hover:bg-[#484848]"
+            className={`mc-tab px-6 py-1.5 text-2xl font-bold tracking-wide min-w-0 ${
+              activeTab === "worlds" ? "mc-tab-selected" : ""
             }`}
             onClick={() => {
               sfx.click();
@@ -125,10 +123,8 @@ export function WorldsMenu({ onSelectWorld, onJoinServer, onBack }: WorldsMenuPr
           </button>
           <button
             type="button"
-            className={`px-6 py-1.5 text-2xl font-bold tracking-wide border-2 border-black transition-all opacity-60 cursor-not-allowed ${
-              activeTab === "friends"
-                ? "bg-[#4a8a3a] text-yellow-200"
-                : "bg-[#3c3c3c] text-neutral-400"
+            className={`mc-tab px-6 py-1.5 text-2xl font-bold tracking-wide min-w-0 opacity-60 cursor-not-allowed ${
+              activeTab === "friends" ? "mc-tab-selected" : ""
             }`}
             onClick={() => sfx.click()}
             title="Próximamente"
@@ -137,10 +133,8 @@ export function WorldsMenu({ onSelectWorld, onJoinServer, onBack }: WorldsMenuPr
           </button>
           <button
             type="button"
-            className={`px-6 py-1.5 text-2xl font-bold tracking-wide border-2 border-black transition-all ${
-              activeTab === "servers"
-                ? "bg-[#4a8a3a] text-yellow-200 border-yellow-300 shadow-[2px_2px_0_#000000]"
-                : "bg-[#3c3c3c] text-neutral-300 hover:bg-[#484848]"
+            className={`mc-tab px-6 py-1.5 text-2xl font-bold tracking-wide min-w-0 ${
+              activeTab === "servers" ? "mc-tab-selected" : ""
             }`}
             onClick={() => {
               sfx.click();
@@ -151,6 +145,7 @@ export function WorldsMenu({ onSelectWorld, onJoinServer, onBack }: WorldsMenuPr
           </button>
         </div>
       </div>
+      <div className="mc-header-sep" />
 
       {/* Main Container */}
       <div className="flex-1 overflow-y-auto p-6 max-w-5xl mx-auto w-full">
@@ -365,6 +360,7 @@ export function WorldsMenu({ onSelectWorld, onJoinServer, onBack }: WorldsMenuPr
           </div>
         )}
       </div>
+      <div className="mc-footer-sep" />
 
       {/* Modal Crear Mundo */}
       {showCreateModal && (
@@ -382,11 +378,10 @@ export function WorldsMenu({ onSelectWorld, onJoinServer, onBack }: WorldsMenuPr
               </h3>
               <button
                 type="button"
-                className="mc-badge-btn text-xl px-2.5 py-0.5"
+                className="mc-cross-btn"
                 onClick={() => setShowCreateModal(false)}
-              >
-                ✕
-              </button>
+                title="Cerrar"
+              />
             </div>
 
             <div>
