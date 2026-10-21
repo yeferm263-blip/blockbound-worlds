@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import type { IncomingMessage, ServerResponse } from "http";
-import type { Plugin, ViteDevServer } from "vite";
+import type { Plugin, ViteDevServer, PreviewServer } from "vite";
 
 interface RoomPlayer {
   ws?: WebSocket;
@@ -260,7 +260,7 @@ function parseBody(req: IncomingMessage): Promise<Record<string, unknown>> {
         resolve({});
       }
     });
-    req.on("error", () => resolve({});
+    req.on("error", () => resolve({}));
   });
 }
 
@@ -357,7 +357,9 @@ export function attachHttpApi(middlewares: {
 
       if (url === "/api/multiplayer/sync" && req.method === "POST") {
         const body = await parseBody(req);
-        const roomCode = String(body.room || "").toUpperCase().trim();
+        const roomCode = String(body.room || "")
+          .toUpperCase()
+          .trim();
         const playerId = String(body.playerId || "");
         const currentRoom = rooms.get(roomCode);
 
@@ -465,7 +467,9 @@ export function attachHttpApi(middlewares: {
 
       if (url === "/api/multiplayer/leave" && req.method === "POST") {
         const body = await parseBody(req);
-        const roomCode = String(body.room || "").toUpperCase().trim();
+        const roomCode = String(body.room || "")
+          .toUpperCase()
+          .trim();
         const playerId = String(body.playerId || "");
         const currentRoom = rooms.get(roomCode);
 
@@ -484,9 +488,12 @@ export function attachHttpApi(middlewares: {
       }
 
       sendJson(res, 404, { ok: false, error: "endpoint_not_found" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Multiplayer API error:", err);
-      sendJson(res, 500, { ok: false, error: err?.message || "internal_error" });
+      sendJson(res, 500, {
+        ok: false,
+        error: err instanceof Error ? err.message : "internal_error",
+      });
     }
   });
 }
@@ -507,7 +514,7 @@ export function multiplayerPlugin(): Plugin {
 
       attachHttpApi(server.middlewares);
     },
-    configurePreviewServer(server: any) {
+    configurePreviewServer(server: PreviewServer) {
       const wss = createMultiplayerWss();
 
       server.httpServer?.on("upgrade", (req: IncomingMessage, socket, head) => {

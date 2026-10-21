@@ -927,7 +927,10 @@ export class Engine {
           } else if (ev.type === "block_change" && ev.data) {
             if (ev.data.by !== this.multiplayerPlayerId) {
               this.world.set(ev.data.x, ev.data.y, ev.data.z, ev.data.id);
-              const ch = this.world.getChunk(Math.floor(ev.data.x / CS), Math.floor(ev.data.z / CS));
+              const ch = this.world.getChunk(
+                Math.floor(ev.data.x / CS),
+                Math.floor(ev.data.z / CS),
+              );
               if (ch) this.world.mesh(ch);
             }
           } else if (ev.type === "chat" && ev.data) {

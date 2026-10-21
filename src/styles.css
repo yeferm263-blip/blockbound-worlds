@@ -563,7 +563,9 @@
   .mc-badge-btn {
     background: color-mix(in oklab, var(--mc-slot) 80%, black);
     border: 2px solid var(--mc-slot-dark);
-    box-shadow: inset 1px 1px 0 var(--mc-panel-light), inset -1px -1px 0 var(--mc-panel-dark);
+    box-shadow:
+      inset 1px 1px 0 var(--mc-panel-light),
+      inset -1px -1px 0 var(--mc-panel-dark);
     color: var(--mc-text);
     font-family: inherit;
     font-size: 1.15rem;
