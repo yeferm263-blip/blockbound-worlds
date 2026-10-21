@@ -25,15 +25,59 @@ export function Chat({
       return;
     }
     if (t.startsWith("/")) {
-      const cmd = t.slice(1).split(/\s+/)[0].toLowerCase();
+      const parts = t.slice(1).split(/\s+/);
+      const cmd = parts[0].toLowerCase();
+      const arg = parts[1]?.toLowerCase();
+
+      if (cmd === "creative" || (cmd === "gamemode" && (arg === "creative" || arg === "c" || arg === "1"))) {
+        engine.setGameMode("creative");
+        onLog("Tu modo de juego se ha cambiado a Modo Creativo");
+        engine.closeUI();
+        return;
+      }
+      if (cmd === "survival" || (cmd === "gamemode" && (arg === "survival" || arg === "s" || arg === "0"))) {
+        engine.setGameMode("survival");
+        onLog("Tu modo de juego se ha cambiado a Modo Supervivencia");
+        engine.closeUI();
+        return;
+      }
+      if (cmd === "fly") {
+        if (engine.state.mode === "creative") {
+          engine.flying = !engine.flying;
+          onLog(engine.flying ? "Vuelo activado" : "Vuelo desactivado");
+        } else {
+          onLog("El vuelo solo está disponible en Modo Creativo (/creative)");
+        }
+        engine.closeUI();
+        return;
+      }
       if (cmd === "admin") {
         onLog("Abriendo panel de texturas…");
         engine.openAdmin();
         return;
       }
-      if (cmd === "help") onLog("Comandos: /admin (cambiar texturas de bloques), /help");
-      else onLog(`Comando desconocido: /${cmd}. Escribe /help`);
-    } else onLog(`<Jugador> ${t}`);
+      if (cmd === "clear") {
+        engine.state.slots = Array(36).fill(null);
+        engine.emit();
+        onLog("Inventario vaciado.");
+        engine.closeUI();
+        return;
+      }
+      if (cmd === "help") {
+        onLog("Comandos disponibles:");
+        onLog("  /creative o /gamemode creative (acceso a todos los bloques, volar)");
+        onLog("  /survival o /gamemode survival (modo supervivencia clásico)");
+        onLog("  /fly (activar/desactivar vuelo en creativo)");
+        onLog("  /admin (personalizar texturas de bloques)");
+        onLog("  /clear (vaciar inventario)");
+      } else {
+        onLog(`Comando desconocido: /${cmd}. Escribe /help para ver comandos.`);
+      }
+    } else {
+      const author = engine.playerName || "Jugador";
+      onLog(`<${author}> ${t}`);
+      engine.sendChat(t);
+    }
     engine.closeUI();
   };
   return (

@@ -1,0 +1,6 @@
+{
+  "name": "Blockbound Worlds",
+  "description": "3D voxel sandbox and survival game built with Three.js and React",
+  "permissions": [],
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

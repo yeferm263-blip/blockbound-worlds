@@ -2,7 +2,15 @@ import { buildAtlas } from "./textures";
 import * as THREE from "three";
 import { B, BLOCKS, ITEMS, RECIPES, breakInfo, blockDrop, isSolid, type Recipe } from "./blocks";
 import { World, CS, CH, tileUV } from "./world";
-import { MOBS, buildMob, buildArm, animateMobGait, type MobModel, type MobType } from "./mobs";
+import {
+  MOBS,
+  buildMob,
+  buildArm,
+  buildPlayerModel,
+  animateMobGait,
+  type MobModel,
+  type MobType,
+} from "./mobs";
 import { sfx, startMusic, stopAudio, toggleMusic, preloadSounds, type Material } from "./audio";
 import { itemModel } from "./itemModel";
 import faithfulPng from "@/assets/faithful.png.asset.json";
@@ -32,6 +40,8 @@ export interface GameState {
   hp: number;
   food: number;
   ui: "none" | "inventory" | "chat" | "admin";
+  mode: "survival" | "creative";
+  multiplayer: { connected: boolean; room: string; playerCount: number };
   /** Crafting grid: 4 cells (inventory), 9 cells (table), or [input, fuel] (furnace). */
   grid: Slot[];
   station: Station;
@@ -171,6 +181,35 @@ export class Engine {
   disposed = false;
   msgT = 0;
 
+  flying = false;
+  lastSpacePress = 0;
+  camShake = 0;
+  particles: { mesh: THREE.Mesh; vel: THREE.Vector3; age: number; maxAge: number }[] = [];
+
+  // Multiplayer
+  ws: WebSocket | null = null;
+  multiplayerRoom = "";
+  multiplayerPlayerId = "";
+  playerName = "Steve";
+  remotePlayers = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      model: MobModel;
+      tagSprite: THREE.Sprite;
+      pos: THREE.Vector3;
+      targetPos: THREE.Vector3;
+      yaw: number;
+      targetYaw: number;
+      pitch: number;
+      walk: number;
+      heldId: string | null;
+    }
+  >();
+  lastMultiplayerSync = 0;
+  onChatMessage?: (msg: string) => void;
+
   constructor(
     public canvas: HTMLCanvasElement,
     seed = Math.floor(Math.random() * 1e9),
@@ -185,6 +224,8 @@ export class Engine {
       hp: 20,
       food: 20,
       ui: "none",
+      mode: "survival",
+      multiplayer: { connected: false, room: "", playerCount: 1 },
       station: null,
       grid: Array(9).fill(null),
       locked: false,
@@ -369,6 +410,22 @@ export class Engine {
         return;
       }
       this.keys.add(e.code);
+      if (e.code === "Space" && this.state.mode === "creative" && this.state.locked) {
+        const now = performance.now();
+        if (now - this.lastSpacePress < 350) {
+          this.flying = !this.flying;
+          this.player.vel.y = 0;
+          this.toast(this.flying ? "Vuelo activado" : "Vuelo desactivado");
+          this.lastSpacePress = 0;
+        } else {
+          this.lastSpacePress = now;
+        }
+      }
+      if (e.code === "KeyF" && this.state.mode === "creative" && this.state.locked) {
+        this.flying = !this.flying;
+        this.player.vel.y = 0;
+        this.toast(this.flying ? "Vuelo activado" : "Vuelo desactivado");
+      }
       if (e.code.startsWith("Digit")) {
         const n = Number(e.code.slice(5)) - 1;
         if (n >= 0 && n < 9) this.select(n);
@@ -443,9 +500,218 @@ export class Engine {
     this.disposed = true;
     cancelAnimationFrame(this.raf);
     stopAudio();
+    this.disconnectMultiplayer();
     for (const [t, ev, fn] of this.handlers) t.removeEventListener(ev, fn);
     if (document.pointerLockElement) document.exitPointerLock();
     this.renderer.dispose();
+  }
+
+  // ---------- Multiplayer ----------
+  createNameTagSprite(name: string): THREE.Sprite {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+    ctx.roundRect(8, 8, 240, 48, 8);
+    ctx.fill();
+    ctx.font = "bold 28px VT323, monospace, sans-serif";
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(name, 128, 32);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.magFilter = THREE.NearestFilter;
+    const mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true });
+    const sprite = new THREE.Sprite(mat);
+    sprite.scale.set(1.4, 0.35, 1);
+    sprite.position.set(0, 2.2, 0);
+    return sprite;
+  }
+
+  addRemotePlayer(
+    id: string,
+    name: string,
+    pos: [number, number, number],
+    yaw = 0,
+    pitch = 0,
+    held: string | null = null,
+  ) {
+    if (this.remotePlayers.has(id)) return;
+    const model = buildPlayerModel();
+    const tagSprite = this.createNameTagSprite(name);
+    model.root.add(tagSprite);
+    const pVec = new THREE.Vector3(pos[0], pos[1], pos[2]);
+    model.root.position.copy(pVec);
+    model.root.rotation.y = yaw;
+    this.scene.add(model.root);
+
+    this.remotePlayers.set(id, {
+      id,
+      name,
+      model,
+      tagSprite,
+      pos: pVec.clone(),
+      targetPos: pVec.clone(),
+      yaw,
+      targetYaw: yaw,
+      pitch,
+      walk: 0,
+      heldId: held,
+    });
+  }
+
+  removeRemotePlayer(id: string) {
+    const rp = this.remotePlayers.get(id);
+    if (rp) {
+      this.scene.remove(rp.model.root);
+      rp.model.mats.forEach((m) => m.dispose());
+      this.remotePlayers.delete(id);
+    }
+  }
+
+  connectMultiplayer(roomCode: string, name: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.disconnectMultiplayer();
+      const code = (roomCode || "MUNDO-1").toUpperCase().trim().slice(0, 10);
+      this.playerName = (name || "Steve").trim().slice(0, 16);
+      const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const url = `${proto}//${window.location.host}/ws/multiplayer`;
+
+      try {
+        const ws = new WebSocket(url);
+        this.ws = ws;
+
+        ws.onopen = () => {
+          ws.send(
+            JSON.stringify({
+              type: "join",
+              room: code,
+              name: this.playerName,
+              pos: [this.player.pos.x, this.player.pos.y, this.player.pos.z],
+              yaw: this.yaw,
+              pitch: this.pitch,
+              seed: this.seed,
+            }),
+          );
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === "joined") {
+              this.multiplayerRoom = msg.room;
+              this.multiplayerPlayerId = msg.id;
+              this.state.multiplayer = {
+                connected: true,
+                room: msg.room,
+                playerCount: (msg.players?.length || 0) + 1,
+              };
+              if (Array.isArray(msg.blockChanges)) {
+                for (const bc of msg.blockChanges) {
+                  this.world.set(bc.x, bc.y, bc.z, bc.id);
+                }
+              }
+              if (Array.isArray(msg.players)) {
+                for (const p of msg.players) {
+                  this.addRemotePlayer(p.id, p.name, p.pos, p.yaw, p.pitch, p.held);
+                }
+              }
+              this.toast(`Conectado a sala ${msg.room}`);
+              this.emit();
+              resolve(true);
+            } else if (msg.type === "player_joined") {
+              const p = msg.player;
+              this.addRemotePlayer(p.id, p.name, p.pos, p.yaw, p.pitch, p.held);
+              this.toast(`[+] ${p.name} se unió`);
+              if (this.state.multiplayer) {
+                this.state.multiplayer.playerCount = this.remotePlayers.size + 1;
+                this.emit();
+              }
+            } else if (msg.type === "player_update") {
+              const rp = this.remotePlayers.get(msg.id);
+              if (rp) {
+                rp.targetPos.set(msg.pos[0], msg.pos[1], msg.pos[2]);
+                rp.targetYaw = msg.yaw;
+                rp.pitch = msg.pitch;
+                if (msg.swing && rp.model.arms[1]) {
+                  rp.model.arms[1].rotation.x = (-Math.PI / 2) * msg.swing;
+                }
+                rp.heldId = msg.held;
+              }
+            } else if (msg.type === "block_change") {
+              if (msg.by !== this.multiplayerPlayerId) {
+                this.world.set(msg.x, msg.y, msg.z, msg.id);
+              }
+            } else if (msg.type === "chat") {
+              if (this.onChatMessage) {
+                this.onChatMessage(`<${msg.from}> ${msg.text}`);
+              }
+            } else if (msg.type === "player_left") {
+              this.removeRemotePlayer(msg.id);
+              this.toast(`[-] ${msg.name} salió`);
+              if (this.state.multiplayer) {
+                this.state.multiplayer.playerCount = this.remotePlayers.size + 1;
+                this.emit();
+              }
+            }
+          } catch (err) {
+            console.error("Multiplayer msg err:", err);
+          }
+        };
+
+        ws.onerror = (err) => {
+          console.error("Multiplayer WS error:", err);
+          resolve(false);
+        };
+
+        ws.onclose = () => {
+          this.disconnectMultiplayer();
+        };
+      } catch (err) {
+        console.error("Multiplayer connect error:", err);
+        resolve(false);
+      }
+    });
+  }
+
+  disconnectMultiplayer() {
+    if (this.ws) {
+      try {
+        this.ws.close();
+      } catch {}
+      this.ws = null;
+    }
+    for (const id of [...this.remotePlayers.keys()]) {
+      this.removeRemotePlayer(id);
+    }
+    this.state.multiplayer = { connected: false, room: "", playerCount: 1 };
+    this.emit();
+  }
+
+  sendBlockChange(x: number, y: number, z: number, id: number) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(
+        JSON.stringify({
+          type: "block_change",
+          x,
+          y,
+          z,
+          id,
+        }),
+      );
+    }
+  }
+
+  sendChat(text: string) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(
+        JSON.stringify({
+          type: "chat",
+          text,
+        }),
+      );
+    }
   }
 
   // ---------- inventory ----------
@@ -493,12 +759,33 @@ export class Engine {
     this.state.slots = slots;
   }
   consumeHeld() {
+    if (this.state.mode === "creative") return;
     const i = this.state.selected;
     const s = this.state.slots[i];
     if (!s) return;
     const slots = this.state.slots.slice();
     slots[i] = s.count > 1 ? { id: s.id, count: s.count - 1 } : null;
     this.state.slots = slots;
+    this.emit();
+  }
+  setGameMode(mode: "survival" | "creative") {
+    this.state.mode = mode;
+    if (mode === "creative") {
+      this.state.hp = 20;
+      this.state.food = 20;
+      this.toast("Modo de juego cambiado a Modo Creativo");
+    } else {
+      this.flying = false;
+      this.toast("Modo de juego cambiado a Modo Supervivencia");
+    }
+    this.emit();
+  }
+  giveCreativeStack(id: string) {
+    const i = this.state.selected;
+    const slots = this.state.slots.slice();
+    slots[i] = { id, count: 64 };
+    this.state.slots = slots;
+    sfx.pop();
     this.emit();
   }
   /** Minecraft cursor rules on any slot array (left = pick/put/swap all, right = half/one). */
@@ -739,13 +1026,19 @@ export class Engine {
       Math.floor(b.pos.z),
     );
     b.inWater = feet === B.WATER;
-    if (b.inWater) {
-      b.vel.y -= GRAV * 0.18 * dt;
-      b.vel.x *= Math.exp(-1.8 * dt);
-      b.vel.z *= Math.exp(-1.8 * dt);
-      b.vel.y *= Math.exp(-1.2 * dt);
-    } else b.vel.y -= GRAV * dt;
-    b.vel.y = Math.max(b.vel.y, -50);
+    if (b === this.player && this.state.mode === "creative") {
+      this.fallStart = this.player.pos.y;
+    }
+    const isCreativeFlying = b === this.player && this.state.mode === "creative" && this.flying;
+    if (!isCreativeFlying) {
+      if (b.inWater) {
+        b.vel.y -= GRAV * 0.18 * dt;
+        b.vel.x *= Math.exp(-1.8 * dt);
+        b.vel.z *= Math.exp(-1.8 * dt);
+        b.vel.y *= Math.exp(-1.2 * dt);
+      } else b.vel.y -= GRAV * dt;
+      b.vel.y = Math.max(b.vel.y, -50);
+    }
     b.onGround = false;
     b.hitWall = false;
     const steps =
@@ -867,6 +1160,7 @@ export class Engine {
       }
     }
     this.world.set(p.x, p.y, p.z, it.block);
+    this.sendBlockChange(p.x, p.y, p.z, it.block);
     for (const [dx, dz] of [
       [1, 0],
       [-1, 0],
@@ -884,9 +1178,10 @@ export class Engine {
   }
 
   breakBlock(x: number, y: number, z: number, id: number, drops: boolean) {
-    if (drops) sfx.brk(blockMat(id));
+    if (drops && this.state.mode !== "creative") sfx.brk(blockMat(id));
     this.world.set(x, y, z, B.AIR);
-    if (drops) {
+    this.sendBlockChange(x, y, z, B.AIR);
+    if (drops && this.state.mode !== "creative") {
       let d = blockDrop(id);
       if (id === B.LEAVES && Math.random() < 0.06) d = "apple";
       if (id === B.GRAVEL && Math.random() < 0.1) d = "stick";
@@ -995,7 +1290,7 @@ export class Engine {
   }
 
   hurtPlayer(n: number, from?: THREE.Vector3) {
-    if (this.state.dead || n <= 0) return;
+    if (this.state.dead || n <= 0 || this.state.mode === "creative") return;
     this.state.hp = Math.max(0, this.state.hp - n);
     sfx.hurt();
     this.state.hurt = 1;
@@ -1030,18 +1325,26 @@ export class Engine {
 
   explode(c: THREE.Vector3, r: number) {
     sfx.explode();
-    for (let x = -r; x <= r; x++)
-      for (let y = -r; y <= r; y++)
-        for (let z = -r; z <= r; z++) {
+    this.spawnExplosionParticles(c);
+    this.camShake = 0.55;
+
+    const ir = Math.floor(r);
+    const cx = Math.floor(c.x),
+      cy = Math.floor(c.y),
+      cz = Math.floor(c.z);
+    for (let x = -ir; x <= ir; x++)
+      for (let y = -ir; y <= ir; y++)
+        for (let z = -ir; z <= ir; z++) {
           if (x * x + y * y + z * z > r * r) continue;
-          const bx = Math.floor(c.x) + x,
-            by = Math.floor(c.y) + y,
-            bz = Math.floor(c.z) + z;
+          const bx = cx + x,
+            by = cy + y,
+            bz = cz + z;
           const id = this.world.get(bx, by, bz);
           if (!id || id === B.BEDROCK || id === B.WATER) continue;
           this.world.set(bx, by, bz, B.AIR);
+          this.sendBlockChange(bx, by, bz, B.AIR);
           const d = blockDrop(id);
-          if (d && Math.random() < 0.25)
+          if (d && Math.random() < 0.3)
             this.spawnDrop(d, 1, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5));
         }
     const dist = this.player.pos.distanceTo(c);
@@ -1049,6 +1352,30 @@ export class Engine {
     for (const m of [...this.mobs]) {
       const dm = m.pos.distanceTo(c);
       if (dm < r * 2) this.damageMob(m, (1 - dm / (r * 2)) * 20, m.pos.clone().sub(c).normalize());
+    }
+  }
+
+  spawnExplosionParticles(c: THREE.Vector3) {
+    const geo = new THREE.BoxGeometry(0.18, 0.18, 0.18);
+    const colors = [0xffffff, 0xffaa00, 0xff4400, 0x888888, 0x333333];
+    for (let i = 0; i < 32; i++) {
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.copy(c).add(
+        new THREE.Vector3(
+          (Math.random() - 0.5) * 0.8,
+          (Math.random() - 0.5) * 0.8,
+          (Math.random() - 0.5) * 0.8,
+        ),
+      );
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 14,
+        Math.random() * 8 + 3,
+        (Math.random() - 0.5) * 14,
+      );
+      this.scene.add(mesh);
+      this.particles.push({ mesh, vel, age: 0, maxAge: 0.35 + Math.random() * 0.3 });
     }
   }
 
@@ -1100,13 +1427,28 @@ export class Engine {
     }
     const sneak = this.keys.has("ShiftLeft");
     const sprint = this.keys.has("ControlLeft") && st.food > 6 && !sneak;
-    const speed = p.inWater ? 3.0 : sneak ? 1.4 : sprint ? 5.6 : 4.3;
+    const speed =
+      this.state.mode === "creative" && this.flying
+        ? sprint
+          ? 12.0
+          : 8.0
+        : p.inWater
+          ? 3.0
+          : sneak
+            ? 1.4
+            : sprint
+              ? 5.6
+              : 4.3;
     if (wish.lengthSq()) wish.normalize().multiplyScalar(speed);
     const k = p.onGround ? 14 : p.inWater ? 8 : 3;
     const blend = 1 - Math.exp(-k * dt);
     p.vel.x += (wish.x - p.vel.x) * blend;
     p.vel.z += (wish.z - p.vel.z) * blend;
-    if (playing && this.keys.has("Space")) {
+    if (this.state.mode === "creative" && this.flying) {
+      if (playing && this.keys.has("Space")) p.vel.y = 8.5;
+      else if (playing && (this.keys.has("ShiftLeft") || this.keys.has("KeyC"))) p.vel.y = -8.5;
+      else p.vel.y = 0;
+    } else if (playing && this.keys.has("Space")) {
       if (p.inWater) {
         p.vel.y = Math.min(p.vel.y + 28 * dt, 4.2);
         const aboveFeet = this.world.get(
@@ -1147,10 +1489,10 @@ export class Engine {
     if (!p.onGround) this.fallStart = Math.max(this.fallStart, p.pos.y);
     else {
       const fall = this.fallStart - p.pos.y;
-      if (fall > 3.5) this.hurtPlayer(Math.floor(fall - 3));
+      if (fall > 3.5 && this.state.mode !== "creative") this.hurtPlayer(Math.floor(fall - 3));
       this.fallStart = p.pos.y;
     }
-    if (p.pos.y < -20) {
+    if (p.pos.y < -30) {
       this.hurtPlayer(20);
     }
     if (
@@ -1161,26 +1503,32 @@ export class Engine {
     }
 
     // hunger
-    this.hungerT += dt * (sprint && wish.lengthSq() ? 3 : 1);
-    if (this.hungerT > 30) {
+    if (this.state.mode === "creative") {
       this.hungerT = 0;
-      st.food = Math.max(0, st.food - 1);
-      this.emit();
-    }
-    if (st.food >= 18 && st.hp < 20) {
-      this.regenT += dt;
-      if (this.regenT > 3) {
-        this.regenT = 0;
-        st.hp++;
-        this.hungerT += 6;
+      st.food = 20;
+      st.hp = 20;
+    } else {
+      this.hungerT += dt * (sprint && wish.lengthSq() ? 3 : 1);
+      if (this.hungerT > 30) {
+        this.hungerT = 0;
+        st.food = Math.max(0, st.food - 1);
         this.emit();
       }
-    }
-    if (st.food === 0) {
-      this.starveT += dt;
-      if (this.starveT > 4) {
-        this.starveT = 0;
-        if (st.hp > 1) this.hurtPlayer(1);
+      if (st.food >= 18 && st.hp < 20) {
+        this.regenT += dt;
+        if (this.regenT > 3) {
+          this.regenT = 0;
+          st.hp++;
+          this.hungerT += 6;
+          this.emit();
+        }
+      }
+      if (st.food === 0) {
+        this.starveT += dt;
+        if (this.starveT > 4) {
+          this.starveT = 0;
+          if (st.hp > 1) this.hurtPlayer(1);
+        }
       }
     }
 
@@ -1191,6 +1539,76 @@ export class Engine {
     this.camera.fov +=
       ((sprint && wish.lengthSq() ? 84 : 75) - this.camera.fov) * (1 - Math.exp(-8 * dt));
     this.camera.updateProjectionMatrix();
+
+    // camera shake
+    if (this.camShake > 0) {
+      this.camShake = Math.max(0, this.camShake - dt * 2.5);
+      this.camera.position.x += (Math.random() - 0.5) * this.camShake * 0.15;
+      this.camera.position.y += (Math.random() - 0.5) * this.camShake * 0.15;
+    }
+
+    // particles
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const pt = this.particles[i];
+      pt.age += dt;
+      pt.vel.y -= GRAV * 0.3 * dt;
+      pt.mesh.position.addScaledVector(pt.vel, dt);
+      const life = 1 - pt.age / pt.maxAge;
+      if (life <= 0) {
+        this.scene.remove(pt.mesh);
+        pt.mesh.geometry.dispose();
+        (pt.mesh.material as THREE.Material).dispose();
+        this.particles.splice(i, 1);
+      } else {
+        pt.mesh.scale.setScalar(life);
+      }
+    }
+
+    // update remote players
+    for (const rp of this.remotePlayers.values()) {
+      const prevPos = rp.pos.clone();
+      rp.pos.lerp(rp.targetPos, 1 - Math.exp(-14 * dt));
+      rp.model.root.position.copy(rp.pos);
+
+      let dy = rp.targetYaw - rp.yaw;
+      while (dy > Math.PI) dy -= Math.PI * 2;
+      while (dy < -Math.PI) dy += Math.PI * 2;
+      rp.yaw += dy * (1 - Math.exp(-12 * dt));
+      rp.model.root.rotation.y = rp.yaw;
+
+      if (rp.model.head) {
+        rp.model.head.rotation.x = -rp.pitch;
+      }
+
+      const moveDist = rp.pos.distanceTo(prevPos);
+      const spd = dt > 0 ? moveDist / dt : 0;
+      rp.walk += spd * dt * 3;
+      const rbob = animateMobGait(
+        rp.model,
+        "zombie" as any,
+        rp.walk,
+        Math.min(spd, 1),
+        performance.now() / 1000,
+      );
+      rp.model.root.position.y += rbob;
+    }
+
+    // sync local state over websocket at 20Hz
+    const nowTs = performance.now();
+    if (this.ws && this.ws.readyState === WebSocket.OPEN && nowTs - this.lastMultiplayerSync > 50) {
+      this.lastMultiplayerSync = nowTs;
+      this.ws.send(
+        JSON.stringify({
+          type: "state",
+          pos: [this.player.pos.x, this.player.pos.y, this.player.pos.z],
+          yaw: this.yaw,
+          pitch: this.pitch,
+          swing: this.handSwing,
+          held: this.held(),
+          hp: this.state.hp,
+        }),
+      );
+    }
 
     // target + breaking
     const hit = playing ? this.raycast() : null;
@@ -1204,18 +1622,26 @@ export class Engine {
           this.breakProgress = 0;
         }
         const info = breakInfo(hit.id, this.held());
-        this.breakProgress += dt / info.time;
-        this.digT = (this.digT ?? 0) - dt;
-        if (this.digT <= 0) {
-          this.digT = 0.22;
-          sfx.dig(blockMat(hit.id));
-        }
-        this.handSwing = Math.max(this.handSwing, 0.6);
-        if (this.breakProgress >= 1) {
-          this.breakBlock(hit.x, hit.y, hit.z, hit.id, info.drops);
+        if (this.state.mode === "creative") {
+          this.breakBlock(hit.x, hit.y, hit.z, hit.id, false);
           this.breakProgress = 0;
           this.breakTarget = null;
-          this.hungerT += 0.3;
+          sfx.dig(blockMat(hit.id));
+          this.handSwing = Math.max(this.handSwing, 0.6);
+        } else {
+          this.breakProgress += dt / info.time;
+          this.digT = (this.digT ?? 0) - dt;
+          if (this.digT <= 0) {
+            this.digT = 0.22;
+            sfx.dig(blockMat(hit.id));
+          }
+          this.handSwing = Math.max(this.handSwing, 0.6);
+          if (this.breakProgress >= 1) {
+            this.breakBlock(hit.x, hit.y, hit.z, hit.id, info.drops);
+            this.breakProgress = 0;
+            this.breakTarget = null;
+            this.hungerT += 0.3;
+          }
         }
       } else this.breakProgress = 0;
       this.crack.visible = this.breakProgress > 0;
@@ -1514,8 +1940,12 @@ export class Engine {
             move.set(0, 0);
           }
           const flash = m.fuse > 0 && Math.floor(m.fuse * 9) % 2 === 0;
-          for (const mat of m.model.mats) mat.emissive.setScalar(flash ? 0.75 : 0);
-          m.model.root.scale.setScalar(1 + m.fuse * 0.22);
+          for (const mat of m.model.mats) mat.emissive.setScalar(flash ? 0.85 : 0);
+          m.model.root.scale.set(
+            1 + m.fuse * 0.28,
+            1 + m.fuse * 0.45,
+            1 + m.fuse * 0.28,
+          );
           if (m.fuse > 1.4) {
             this.killMob(m, false);
             this.explode(m.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 3.5);
@@ -1588,7 +2018,9 @@ export class Engine {
         m.model.arms.forEach(
           (a, i) =>
             (a.rotation.x = humanoid
-              ? -Math.PI / 2.2 + (i ? sw : -sw) * 0.2 + Math.sin(m.walk * 0.5 + i) * 0.05
+              ? (m.type === "skeleton" && dist < 16
+                  ? -Math.PI / 2 + (m.model.head ? m.model.head.rotation.x * 0.7 : 0)
+                  : -Math.PI / 2.2 + (i ? sw : -sw) * 0.2 + Math.sin(m.walk * 0.5 + i) * 0.05)
               : 0),
         );
       // Shared bob keeps the torso, wool, head and hip joints connected.

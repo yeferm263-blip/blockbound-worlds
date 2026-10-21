@@ -51,7 +51,10 @@ export function createMultiplayerWss() {
         const msg = JSON.parse(raw.toString());
 
         if (msg.type === "join") {
-          const roomCode = String(msg.room || "MAIN").toUpperCase().trim().slice(0, 10);
+          const roomCode = String(msg.room || "MAIN")
+            .toUpperCase()
+            .trim()
+            .slice(0, 10);
           playerName = String(msg.name || "Jugador").slice(0, 16);
           playerId = "p_" + Math.random().toString(36).slice(2, 8);
 
