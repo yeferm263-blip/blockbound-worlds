@@ -115,6 +115,7 @@ export interface ItemDef {
   tool?: Tool;
   tier?: number;
   damage?: number;
+  durability?: number;
   food?: number;
   stack?: number;
 }
@@ -132,6 +133,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "pickaxe",
     tier: 1,
     damage: 2,
+    durability: 59,
     stack: 1,
   },
   stone_pickaxe: {
@@ -141,6 +143,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "pickaxe",
     tier: 2,
     damage: 3,
+    durability: 131,
     stack: 1,
   },
   iron_pickaxe: {
@@ -150,6 +153,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "pickaxe",
     tier: 3,
     damage: 4,
+    durability: 250,
     stack: 1,
   },
   diamond_pickaxe: {
@@ -159,6 +163,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "pickaxe",
     tier: 4,
     damage: 5,
+    durability: 1561,
     stack: 1,
   },
   wood_axe: {
@@ -168,6 +173,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "axe",
     tier: 1,
     damage: 3,
+    durability: 59,
     stack: 1,
   },
   stone_axe: {
@@ -177,6 +183,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "axe",
     tier: 2,
     damage: 4,
+    durability: 131,
     stack: 1,
   },
   wood_shovel: {
@@ -186,6 +193,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "shovel",
     tier: 1,
     damage: 1,
+    durability: 59,
     stack: 1,
   },
   stone_shovel: {
@@ -195,6 +203,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "shovel",
     tier: 2,
     damage: 2,
+    durability: 131,
     stack: 1,
   },
   wood_sword: {
@@ -204,6 +213,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "sword",
     tier: 1,
     damage: 4,
+    durability: 59,
     stack: 1,
   },
   stone_sword: {
@@ -213,6 +223,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "sword",
     tier: 2,
     damage: 5,
+    durability: 131,
     stack: 1,
   },
   iron_sword: {
@@ -222,6 +233,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "sword",
     tier: 3,
     damage: 6,
+    durability: 250,
     stack: 1,
   },
   diamond_sword: {
@@ -231,6 +243,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tool: "sword",
     tier: 4,
     damage: 7,
+    durability: 1561,
     stack: 1,
   },
   raw_pork: { name: "Chuleta cruda", icon: "meat", color: "#f19aa0", food: 3 },

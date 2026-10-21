@@ -321,8 +321,9 @@ export function buildMob(type: MobType): MobModel {
         cube(pivot(s * 2, 12, 0, legs), lw, 12, lw, 0, 16, 0, -6, 0, { hip: 2 });
       if (type === "skeleton" && arms[0]) {
         const bow = buildBowMesh();
-        bow.position.set(0, -10 * PX, 1 * PX);
-        bow.rotation.set(0, 0, 0);
+        // Position bow in the right hand (bottom of arm)
+        bow.position.set(0, -10 * PX, 1.5 * PX);
+        bow.rotation.set(Math.PI / 2, 0, 0);
         arms[0].add(bow);
       }
       break;
@@ -341,28 +342,42 @@ export function buildMob(type: MobType): MobModel {
       break;
     }
     case "spider": {
-      // Spider thorax (center body)
-      cube(root, 6, 6, 6, 0, 0, 0, 7, 0);
-      // Spider abdomen (rear body)
-      body = cube(root, 10, 8, 12, 0, 12, 0, 8, -9);
-      // Spider head with red eyes facing forward (+Z)
-      head = pivot(0, 7, 3);
-      cube(head, 8, 8, 8, 32, 4, 0, 0, 4);
-      // 8 arched legs: upper segment arching up/out from thorax, lower segment pointing down to ground
+      // Spider thorax (center body) at Y=6
+      cube(root, 6, 6, 6, 0, 0, 0, 6, 0);
+      // Spider abdomen (rear body) at Y=7, extending backward
+      body = cube(root, 10, 8, 12, 0, 12, 0, 7, -8);
+      // Spider head with red eyes facing forward (+Z) at Y=6
+      head = pivot(0, 6, 4);
+      cube(head, 8, 8, 8, 32, 4, 0, 0, 3);
+      // 8 arched legs:
+      // Legs rise up & out from thorax (knee high above back), then bend down to ground
+      const zOffsets = [3, 1, -1, -3];
       for (let i = 0; i < 8; i++) {
         const side = i < 4 ? -1 : 1;
-        const legZ = (2 - (i % 4) * 2.2);
-        const p = pivot(side * 3, 7, legZ, legs);
-        // Upper leg extending outward and slightly upward
-        cube(p, 8, 2, 2, 18, 0, side * 4, 1, 0);
-        // Lower leg segment arching down to touch the ground (Y = 0)
+        const legZ = zOffsets[i % 4];
+        // Leg pivot attached to thorax side
+        const p = pivot(side * 3, 6, legZ, legs);
+
+        // Upper leg (femur): extends outward and arches UPWARD
+        const femur = new THREE.Group();
+        p.add(femur);
+        // Slant upward so knees are elevated
+        femur.rotation.z = -side * 0.38;
+        cube(femur, 8, 2, 2, 18, 0, side * 4, 0, 0);
+
+        // Knee joint at the end of the upper leg
         const knee = new THREE.Group();
-        knee.position.set(side * 8 * PX, 1 * PX, 0);
-        knee.rotation.z = -side * 0.55;
-        p.add(knee);
-        cube(knee, 2, 8, 2, 18, 0, side * 0.5, -4, 0);
-        // Initial leg spread
-        p.rotation.y = ((i % 4) - 1.5) * 0.28 * side;
+        knee.position.set(side * 8 * PX, 0, 0);
+        // Bend downward and outward so the tibia slopes down to the ground
+        knee.rotation.z = side * 0.85;
+        femur.add(knee);
+
+        // Lower leg (tibia): points down toward ground level
+        cube(knee, 2, 10, 2, 18, 0, side * 0.8, -4.5, 0);
+
+        // Natural leg spread fan angles
+        const spreadY = (1.5 - (i % 4)) * 0.32 * side;
+        p.rotation.y = spreadY;
       }
       break;
     }
@@ -370,42 +385,49 @@ export function buildMob(type: MobType): MobModel {
   return { root, legs, arms, mats, head, body };
 }
 
-/** 3D wooden bow for skeletons and players with proper curved shape and white string. */
+/** 3D wooden bow for skeletons and players with proper curved shape and visible white string. */
 export function buildBowMesh() {
   const g = new THREE.Group();
-  const woodMat = new THREE.MeshLambertMaterial({ color: 0x8b5a2b });
-  const darkWood = new THREE.MeshLambertMaterial({ color: 0x5a3416 });
-  const stringMat = new THREE.MeshBasicMaterial({ color: 0xf5f5f5 });
+  const woodMat = new THREE.MeshLambertMaterial({ color: 0x825227 });
+  const darkWood = new THREE.MeshLambertMaterial({ color: 0x513114 });
+  const stringMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-  // Center wooden handle
-  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.045, 0.16), darkWood);
+  // Center wooden grip
+  const grip = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.22, 0.065), darkWood);
+  grip.castShadow = true;
   g.add(grip);
 
-  // Upper stave (curving forward)
-  const topMid = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.038, 0.22), woodMat);
-  topMid.position.set(0, -0.04, 0.17);
-  topMid.rotation.x = -0.35;
+  // Upper riser (angling forward)
+  const topMid = new THREE.Mesh(new THREE.BoxGeometry(0.058, 0.24, 0.058), woodMat);
+  topMid.position.set(0, 0.2, 0.05);
+  topMid.rotation.x = -0.28;
+  topMid.castShadow = true;
   g.add(topMid);
 
-  const topTip = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.032, 0.18), darkWood);
-  topTip.position.set(0, -0.11, 0.33);
-  topTip.rotation.x = -0.65;
+  // Upper tip
+  const topTip = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.22, 0.052), darkWood);
+  topTip.position.set(0, 0.4, 0.14);
+  topTip.rotation.x = -0.55;
+  topTip.castShadow = true;
   g.add(topTip);
 
-  // Lower stave (curving forward)
-  const botMid = new THREE.Mesh(new THREE.BoxGeometry(0.038, 0.038, 0.22), woodMat);
-  botMid.position.set(0, -0.04, -0.17);
-  botMid.rotation.x = 0.35;
+  // Lower riser (angling forward)
+  const botMid = new THREE.Mesh(new THREE.BoxGeometry(0.058, 0.24, 0.058), woodMat);
+  botMid.position.set(0, -0.2, 0.05);
+  botMid.rotation.x = 0.28;
+  botMid.castShadow = true;
   g.add(botMid);
 
-  const botTip = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.032, 0.18), darkWood);
-  botTip.position.set(0, -0.11, -0.33);
-  botTip.rotation.x = 0.65;
+  // Lower tip
+  const botTip = new THREE.Mesh(new THREE.BoxGeometry(0.052, 0.22, 0.052), darkWood);
+  botTip.position.set(0, -0.4, 0.14);
+  botTip.rotation.x = 0.55;
+  botTip.castShadow = true;
   g.add(botTip);
 
-  // White bowstring taut from tip to tip
-  const string = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.012, 0.74), stringMat);
-  string.position.set(0, 0.02, 0);
+  // Taut white bowstring connecting tips
+  const string = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.94, 0.022), stringMat);
+  string.position.set(0, 0, -0.02);
   g.add(string);
 
   return g;
@@ -423,8 +445,11 @@ export function animateMobGait(
   model.legs.forEach((leg, i) => {
     if (type === "spider") {
       const side = i < 4 ? -1 : 1;
-      const baseY = ((i % 4) - 1.5) * 0.28 * side;
-      leg.rotation.y = baseY + (i % 2 ? swing : -swing) * 0.35;
+      const baseSpread = (1.5 - (i % 4)) * 0.32 * side;
+      // Walking ripple alternating legs forward/backward
+      const legCycle = Math.sin(phase + (i % 4) * 1.57 + (side < 0 ? 0 : Math.PI));
+      leg.rotation.y = baseSpread + legCycle * 0.3 * Math.min(1, speed);
+      leg.rotation.x = legCycle * 0.15 * Math.min(1, speed);
     } else {
       const diagonal = model.legs.length === 4 ? i === 0 || i === 3 : i % 2 === 0;
       leg.rotation.x = diagonal ? swing : -swing;

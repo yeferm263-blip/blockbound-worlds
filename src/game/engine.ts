@@ -1,7 +1,7 @@
 import { buildAtlas } from "./textures";
 import * as THREE from "three";
 import { B, BLOCKS, ITEMS, RECIPES, breakInfo, blockDrop, isSolid, type Recipe } from "./blocks";
-import { World, CS, CH, tileUV } from "./world";
+import { World, Chunk, CS, CH, tileUV } from "./world";
 import {
   MOBS,
   buildMob,
@@ -30,7 +30,7 @@ function blockMat(id: number): Material {
 }
 import { hash } from "./noise";
 
-export type Slot = { id: string; count: number } | null;
+export type Slot = { id: string; count: number; durability?: number } | null;
 export type Station = "table" | "furnace" | null;
 
 export interface GameState {
@@ -543,7 +543,7 @@ export class Engine {
     model.root.add(tagSprite);
     const pVec = new THREE.Vector3(pos[0], pos[1], pos[2]);
     model.root.position.copy(pVec);
-    model.root.rotation.y = yaw;
+    model.root.rotation.y = yaw + Math.PI;
     this.scene.add(model.root);
 
     this.remotePlayers.set(id, {
@@ -679,7 +679,9 @@ export class Engine {
     if (this.ws) {
       try {
         this.ws.close();
-      } catch {}
+      } catch {
+        // Ignore websocket close errors
+      }
       this.ws = null;
     }
     for (const id of [...this.remotePlayers.keys()]) {
@@ -728,18 +730,23 @@ export class Engine {
   give(id: string, n: number): number {
     const slots = this.state.slots.slice();
     const max = stack(id);
+    const initialDur = ITEMS[id]?.durability;
     for (let i = 0; i < 36 && n > 0; i++) {
       const s = slots[i];
       if (s && s.id === id && s.count < max) {
         const add = Math.min(n, max - s.count);
-        slots[i] = { id, count: s.count + add };
+        slots[i] = { id, count: s.count + add, ...(s.durability !== undefined ? { durability: s.durability } : initialDur !== undefined ? { durability: initialDur } : {}) };
         n -= add;
       }
     }
     for (let i = 0; i < 36 && n > 0; i++)
       if (!slots[i]) {
         const add = Math.min(n, max);
-        slots[i] = { id, count: add };
+        slots[i] = {
+          id,
+          count: add,
+          ...(initialDur !== undefined ? { durability: initialDur } : {}),
+        };
         n -= add;
       }
     this.state.slots = slots;
@@ -753,10 +760,33 @@ export class Engine {
       if (s && s.id === id) {
         const t = Math.min(n, s.count);
         n -= t;
-        slots[i] = s.count - t > 0 ? { id, count: s.count - t } : null;
+        slots[i] = s.count - t > 0 ? { ...s, count: s.count - t } : null;
       }
     }
     this.state.slots = slots;
+  }
+  damageHeldTool(amount = 1) {
+    if (this.state.mode === "creative") return;
+    const i = this.state.selected;
+    const s = this.state.slots[i];
+    if (!s) return;
+    const it = ITEMS[s.id];
+    if (!it?.durability) return;
+
+    const maxDur = it.durability;
+    const curDur = s.durability ?? maxDur;
+    const nextDur = curDur - amount;
+    const slots = this.state.slots.slice();
+    if (nextDur <= 0) {
+      slots[i] = null;
+      sfx.brk("glass");
+      sfx.pop();
+      this.toast(`¡Tu ${it.name} se ha roto!`);
+    } else {
+      slots[i] = { ...s, durability: nextDur };
+    }
+    this.state.slots = slots;
+    this.emit();
   }
   consumeHeld() {
     if (this.state.mode === "creative") return;
@@ -764,7 +794,7 @@ export class Engine {
     const s = this.state.slots[i];
     if (!s) return;
     const slots = this.state.slots.slice();
-    slots[i] = s.count > 1 ? { id: s.id, count: s.count - 1 } : null;
+    slots[i] = s.count > 1 ? { ...s, count: s.count - 1 } : null;
     this.state.slots = slots;
     this.emit();
   }
@@ -783,7 +813,13 @@ export class Engine {
   giveCreativeStack(id: string) {
     const i = this.state.selected;
     const slots = this.state.slots.slice();
-    slots[i] = { id, count: 64 };
+    const it = ITEMS[id];
+    const count = it?.durability ? 1 : stack(id);
+    slots[i] = {
+      id,
+      count,
+      ...(it?.durability !== undefined ? { durability: it.durability } : {}),
+    };
     this.state.slots = slots;
     sfx.pop();
     this.emit();
@@ -842,8 +878,12 @@ export class Engine {
     const r = this.gridResult();
     if (!r) return;
     const c = this.state.cursor;
-    if (c && (c.id !== r.out || c.count + r.count > stack(r.out))) return;
-    this.state.cursor = { id: r.out, count: (c?.count ?? 0) + r.count };
+    const initialDur = ITEMS[r.out]?.durability;
+    this.state.cursor = {
+      id: r.out,
+      count: (c?.count ?? 0) + r.count,
+      ...(initialDur !== undefined ? { durability: initialDur } : {}),
+    };
     const grid = this.state.grid.slice();
     if (this.state.station === "furnace") {
       for (const k of [0, 1]) {
@@ -1080,6 +1120,7 @@ export class Engine {
       this.damageMob(hitM.mob, dmg, this.look());
       this.attackCd = 0.45;
       this.handSwing = 1;
+      this.damageHeldTool(it?.tool === "sword" ? 1 : 2);
     } else if (this.attackCd <= 0 && this.handSwing <= 0) {
       sfx.swing();
       this.handSwing = 1;
@@ -1093,6 +1134,14 @@ export class Engine {
     m.hurt = 0.5;
     sfx.hit();
     sfx.mobHurt(m.type);
+
+    // If creeper takes fatal damage or is hit while almost ready to detonate, detonate!
+    if (m.type === "creeper" && (m.fuse > 0.75 || (m.hp <= 0 && m.fuse > 0.3))) {
+      this.killMob(m, false);
+      this.explode(m.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 3.8);
+      return;
+    }
+
     m.vel.x += dir.x * 7;
     m.vel.z += dir.z * 7;
     m.vel.y = 5;
@@ -1326,12 +1375,13 @@ export class Engine {
   explode(c: THREE.Vector3, r: number) {
     sfx.explode();
     this.spawnExplosionParticles(c);
-    this.camShake = 0.55;
+    this.camShake = 0.85;
 
     const ir = Math.floor(r);
     const cx = Math.floor(c.x),
       cy = Math.floor(c.y),
       cz = Math.floor(c.z);
+    const affectedChunks = new Set<Chunk>();
     for (let x = -ir; x <= ir; x++)
       for (let y = -ir; y <= ir; y++)
         for (let z = -ir; z <= ir; z++) {
@@ -1343,39 +1393,55 @@ export class Engine {
           if (!id || id === B.BEDROCK || id === B.WATER) continue;
           this.world.set(bx, by, bz, B.AIR);
           this.sendBlockChange(bx, by, bz, B.AIR);
+          const chX = Math.floor(bx / CS),
+            chZ = Math.floor(bz / CS);
+          const ch = this.world.getChunk(chX, chZ);
+          if (ch) affectedChunks.add(ch);
           const d = blockDrop(id);
-          if (d && Math.random() < 0.3)
+          if (d && Math.random() < 0.35)
             this.spawnDrop(d, 1, new THREE.Vector3(bx + 0.5, by + 0.5, bz + 0.5));
         }
+    // Immediately remesh all affected chunks so the crater appears instantly
+    for (const ch of affectedChunks) {
+      this.world.meshChunk(ch);
+    }
     const dist = this.player.pos.distanceTo(c);
-    if (dist < r * 2) this.hurtPlayer(Math.round((1 - dist / (r * 2)) * 18), c);
+    if (dist < r * 2.2) {
+      const dmg = Math.round((1 - dist / (r * 2.2)) * 24);
+      this.hurtPlayer(dmg, c);
+    }
     for (const m of [...this.mobs]) {
       const dm = m.pos.distanceTo(c);
-      if (dm < r * 2) this.damageMob(m, (1 - dm / (r * 2)) * 20, m.pos.clone().sub(c).normalize());
+      if (dm < r * 2.2)
+        this.damageMob(m, (1 - dm / (r * 2.2)) * 26, m.pos.clone().sub(c).normalize());
     }
   }
 
   spawnExplosionParticles(c: THREE.Vector3) {
-    const geo = new THREE.BoxGeometry(0.18, 0.18, 0.18);
-    const colors = [0xffffff, 0xffaa00, 0xff4400, 0x888888, 0x333333];
-    for (let i = 0; i < 32; i++) {
+    const geo = new THREE.BoxGeometry(0.24, 0.24, 0.24);
+    const colors = [0xffffff, 0xffcc00, 0xff5500, 0xee2200, 0x444444, 0x777777, 0xaaaaaa];
+    for (let i = 0; i < 48; i++) {
       const color = colors[Math.floor(Math.random() * colors.length)];
       const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 1 });
       const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.copy(c).add(
-        new THREE.Vector3(
-          (Math.random() - 0.5) * 0.8,
-          (Math.random() - 0.5) * 0.8,
-          (Math.random() - 0.5) * 0.8,
-        ),
-      );
+      const sc = 0.6 + Math.random() * 1.5;
+      mesh.scale.set(sc, sc, sc);
+      mesh.position
+        .copy(c)
+        .add(
+          new THREE.Vector3(
+            (Math.random() - 0.5) * 1.2,
+            (Math.random() - 0.5) * 1.2,
+            (Math.random() - 0.5) * 1.2,
+          ),
+        );
       const vel = new THREE.Vector3(
-        (Math.random() - 0.5) * 14,
-        Math.random() * 8 + 3,
-        (Math.random() - 0.5) * 14,
+        (Math.random() - 0.5) * 18,
+        Math.random() * 10 + 4,
+        (Math.random() - 0.5) * 18,
       );
       this.scene.add(mesh);
-      this.particles.push({ mesh, vel, age: 0, maxAge: 0.35 + Math.random() * 0.3 });
+      this.particles.push({ mesh, vel, age: 0, maxAge: 0.45 + Math.random() * 0.35 });
     }
   }
 
@@ -1574,7 +1640,7 @@ export class Engine {
       while (dy > Math.PI) dy -= Math.PI * 2;
       while (dy < -Math.PI) dy += Math.PI * 2;
       rp.yaw += dy * (1 - Math.exp(-12 * dt));
-      rp.model.root.rotation.y = rp.yaw;
+      rp.model.root.rotation.y = rp.yaw + Math.PI;
 
       if (rp.model.head) {
         rp.model.head.rotation.x = -rp.pitch;
@@ -1585,7 +1651,7 @@ export class Engine {
       rp.walk += spd * dt * 3;
       const rbob = animateMobGait(
         rp.model,
-        "zombie" as any,
+        "zombie",
         rp.walk,
         Math.min(spd, 1),
         performance.now() / 1000,
@@ -1641,6 +1707,7 @@ export class Engine {
             this.breakProgress = 0;
             this.breakTarget = null;
             this.hungerT += 0.3;
+            this.damageHeldTool(1);
           }
         }
       } else this.breakProgress = 0;
@@ -1941,11 +2008,7 @@ export class Engine {
           }
           const flash = m.fuse > 0 && Math.floor(m.fuse * 9) % 2 === 0;
           for (const mat of m.model.mats) mat.emissive.setScalar(flash ? 0.85 : 0);
-          m.model.root.scale.set(
-            1 + m.fuse * 0.28,
-            1 + m.fuse * 0.45,
-            1 + m.fuse * 0.28,
-          );
+          m.model.root.scale.set(1 + m.fuse * 0.28, 1 + m.fuse * 0.45, 1 + m.fuse * 0.28);
           if (m.fuse > 1.4) {
             this.killMob(m, false);
             this.explode(m.pos.clone().add(new THREE.Vector3(0, 0.8, 0)), 3.5);
@@ -2018,9 +2081,9 @@ export class Engine {
         m.model.arms.forEach(
           (a, i) =>
             (a.rotation.x = humanoid
-              ? (m.type === "skeleton" && dist < 16
-                  ? -Math.PI / 2 + (m.model.head ? m.model.head.rotation.x * 0.7 : 0)
-                  : -Math.PI / 2.2 + (i ? sw : -sw) * 0.2 + Math.sin(m.walk * 0.5 + i) * 0.05)
+              ? m.type === "skeleton" && dist < 16
+                ? -Math.PI / 2 + (m.model.head ? m.model.head.rotation.x * 0.7 : 0)
+                : -Math.PI / 2.2 + (i ? sw : -sw) * 0.2 + Math.sin(m.walk * 0.5 + i) * 0.05
               : 0),
         );
       // Shared bob keeps the torso, wool, head and hip joints connected.

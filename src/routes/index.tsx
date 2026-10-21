@@ -5,16 +5,16 @@ export const Route = createFileRoute("/")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "VoxelCraft — Mundo de bloques 3D" },
+      { title: "Blockbound Worlds — 3D Voxel Sandbox & Survival" },
       {
         name: "description",
         content:
           "Explora, pica, tala, construye y sobrevive a los mobs en un mundo de bloques 3D infinito.",
       },
-      { property: "og:title", content: "VoxelCraft — Mundo de bloques 3D" },
+      { property: "og:title", content: "Blockbound Worlds — 3D Voxel Sandbox & Survival" },
       {
         property: "og:description",
-        content: "Juego de supervivencia y construcción con bloques en tu navegador.",
+        content: "3D voxel sandbox and survival game built with Three.js and React",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

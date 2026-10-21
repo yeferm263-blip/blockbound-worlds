@@ -78,14 +78,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "VoxelCraft" },
-      { name: "description", content: "Mundo de bloques 3D de supervivencia" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "VoxelCraft" },
-      { property: "og:description", content: "Mundo de bloques 3D de supervivencia" },
+      { title: "Blockbound Worlds" },
+      {
+        name: "description",
+        content: "3D voxel sandbox and survival game built with Three.js and React",
+      },
+      { property: "og:title", content: "Blockbound Worlds" },
+      {
+        property: "og:description",
+        content: "3D voxel sandbox and survival game built with Three.js and React",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {

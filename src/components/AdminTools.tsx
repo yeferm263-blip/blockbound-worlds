@@ -29,13 +29,19 @@ export function Chat({
       const cmd = parts[0].toLowerCase();
       const arg = parts[1]?.toLowerCase();
 
-      if (cmd === "creative" || (cmd === "gamemode" && (arg === "creative" || arg === "c" || arg === "1"))) {
+      if (
+        cmd === "creative" ||
+        (cmd === "gamemode" && (arg === "creative" || arg === "c" || arg === "1"))
+      ) {
         engine.setGameMode("creative");
         onLog("Tu modo de juego se ha cambiado a Modo Creativo");
         engine.closeUI();
         return;
       }
-      if (cmd === "survival" || (cmd === "gamemode" && (arg === "survival" || arg === "s" || arg === "0"))) {
+      if (
+        cmd === "survival" ||
+        (cmd === "gamemode" && (arg === "survival" || arg === "s" || arg === "0"))
+      ) {
         engine.setGameMode("survival");
         onLog("Tu modo de juego se ha cambiado a Modo Supervivencia");
         engine.closeUI();
