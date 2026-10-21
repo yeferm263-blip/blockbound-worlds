@@ -161,65 +161,347 @@
   --mc-accent: oklch(0.82 0.17 125);
   --mc-hurt: oklch(0.55 0.25 27);
 }
-@theme inline { --font-pixel: "VT323", ui-monospace, monospace; }
+@theme inline {
+  --font-pixel: "VT323", ui-monospace, monospace;
+}
 
 @layer components {
-  .mc-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; background: var(--mc-overlay); color: var(--mc-text); z-index: 30; }
-  .mc-overlay-soft { background: oklch(0 0 0 / 0.45); }
-  .mc-overlay-dead { background: var(--mc-dead); }
-  .mc-title { font-size: 4.5rem; letter-spacing: 0.08em; color: var(--mc-text); text-shadow: 4px 4px 0 var(--mc-shadow); }
-  .mc-button { min-width: 18rem; padding: 0.5rem 1rem; font-size: 1.75rem; color: var(--mc-text); background: var(--mc-slot); border: 3px solid var(--mc-slot-dark); box-shadow: inset 2px 2px 0 var(--mc-panel-light), inset -2px -2px 0 var(--mc-panel-dark); text-shadow: 2px 2px 0 var(--mc-shadow); }
-  .mc-button:hover { outline: 3px solid var(--mc-text); }
-  .mc-help { text-align: center; font-size: 1.25rem; line-height: 1.4; text-shadow: 2px 2px 0 var(--mc-shadow); }
-  .mc-crosshair { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%); font-size: 2.2rem; color: var(--mc-text); mix-blend-mode: difference; pointer-events: none; }
-  .mc-info { position: absolute; left: 0.75rem; top: 0.5rem; font-size: 1.35rem; color: var(--mc-text); text-shadow: 2px 2px 0 var(--mc-shadow); pointer-events: none; }
-  .mc-toast { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-size: 1.8rem; color: var(--mc-accent); text-shadow: 2px 2px 0 var(--mc-shadow); pointer-events: none; }
-  .mc-held-name { font-size: 1.4rem; color: var(--mc-text); text-shadow: 2px 2px 0 var(--mc-shadow); }
-  .mc-hurt { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, var(--mc-hurt) 100%); }
-  .mc-hotbar { position: relative; display: flex; padding: 2px; width: 364px; height: 44px; }
-  .mc-pack-sprite { display: inline-block; flex-shrink: 0; image-rendering: pixelated; background-repeat: no-repeat; pointer-events: none; }
-  .mc-hotbar-texture { position: absolute; inset: 0; }
-  .mc-hotbar-selection { position: absolute; top: -2px; z-index: 2; pointer-events: none; }
-  .mc-status-bar { display: flex; width: 180px; height: 18px; }
-  .mc-status-icon { position: relative; width: 18px; height: 18px; }
-  .mc-sprite-layer { position: absolute; inset: 0; }
-  .mc-slot { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: var(--mc-slot); box-shadow: inset 2px 2px 0 var(--mc-slot-dark), inset -2px -2px 0 var(--mc-panel-light); cursor: pointer; }
-  .mc-hotbar .mc-slot { width: 40px; height: 40px; background: transparent; box-shadow: none; }
-  .mc-hotbar .mc-slot-active { box-shadow: none; z-index: 1; }
-  .mc-count { position: absolute; right: 2px; bottom: -2px; font-size: 1.35rem; color: var(--mc-text); text-shadow: 2px 2px 0 var(--mc-shadow); pointer-events: none; }
-  .mc-panel { padding: 1rem; background: var(--mc-panel); color: var(--mc-text-dark); border: 3px solid var(--mc-slot-dark); box-shadow: inset 3px 3px 0 var(--mc-panel-light), inset -3px -3px 0 var(--mc-panel-dark); font-size: 1.2rem; }
-  .mc-chat-line { padding: 0.1rem 0.4rem; font-size: 1.1rem; color: var(--mc-text); background: color-mix(in oklab, var(--mc-shadow) 55%, transparent); text-shadow: 1px 1px 0 var(--mc-shadow); width: fit-content; }
-  .mc-chat-input { width: 100%; padding: 0.3rem 0.5rem; font-size: 1.2rem; color: var(--mc-text); background: color-mix(in oklab, var(--mc-shadow) 70%, transparent); outline: none; border: 0; }
-  .mc-preview { width: 220px; height: 220px; background: var(--mc-slot); border: 3px solid var(--mc-slot-dark); cursor: grab; }
-  .mc-panel-title { font-size: 1.5rem; margin-bottom: 0.4rem; }
-  .mc-grid { display: grid; grid-template-columns: repeat(9, 44px); gap: 2px; }
-  .mc-recipes { display: flex; flex-direction: column; gap: 4px; max-height: 340px; overflow-y: auto; padding-right: 4px; }
-  .mc-recipe { display: flex; align-items: center; gap: 0.5rem; padding: 2px 6px 2px 2px; background: var(--mc-panel-light); border: 2px solid var(--mc-panel-dark); font-size: 1.1rem; color: var(--mc-text-dark); }
-  .mc-recipe:hover:not(:disabled) { border-color: var(--mc-accent); }
-  .mc-recipe-off { opacity: 0.45; cursor: not-allowed; }
-  .mc-gui { position: relative; background-repeat: no-repeat; image-rendering: pixelated; background-position: 0 0; }
-  .mc-gui-slot { position: absolute; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-  .mc-gui-slot:hover { background: color-mix(in oklab, var(--mc-text) 45%, transparent); }
-  .mc-gui-icon { display: flex; transform: scale(1.4); pointer-events: none; }
-  .mc-gui-label { position: absolute; font-size: 1.5rem; line-height: 1; color: var(--mc-text-dark); pointer-events: none; }
-  .mc-gui-player { position: absolute; display: flex; align-items: center; justify-content: center; overflow: hidden; pointer-events: none; }
-  .mc-item-img { width: 32px; height: 32px; image-rendering: pixelated; pointer-events: none; }
+  .mc-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    background: var(--mc-overlay);
+    color: var(--mc-text);
+    z-index: 30;
+  }
+  .mc-overlay-soft {
+    background: oklch(0 0 0 / 0.45);
+  }
+  .mc-overlay-dead {
+    background: var(--mc-dead);
+  }
+  .mc-title {
+    font-size: 4.5rem;
+    letter-spacing: 0.08em;
+    color: var(--mc-text);
+    text-shadow: 4px 4px 0 var(--mc-shadow);
+  }
+  .mc-button {
+    min-width: 18rem;
+    padding: 0.5rem 1rem;
+    font-size: 1.75rem;
+    color: var(--mc-text);
+    background: var(--mc-slot);
+    border: 3px solid var(--mc-slot-dark);
+    box-shadow:
+      inset 2px 2px 0 var(--mc-panel-light),
+      inset -2px -2px 0 var(--mc-panel-dark);
+    text-shadow: 2px 2px 0 var(--mc-shadow);
+  }
+  .mc-button:hover {
+    outline: 3px solid var(--mc-text);
+  }
+  .mc-help {
+    text-align: center;
+    font-size: 1.25rem;
+    line-height: 1.4;
+    text-shadow: 2px 2px 0 var(--mc-shadow);
+  }
+  .mc-crosshair {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -52%);
+    font-size: 2.2rem;
+    color: var(--mc-text);
+    mix-blend-mode: difference;
+    pointer-events: none;
+  }
+  .mc-info {
+    position: absolute;
+    left: 0.75rem;
+    top: 0.5rem;
+    font-size: 1.35rem;
+    color: var(--mc-text);
+    text-shadow: 2px 2px 0 var(--mc-shadow);
+    pointer-events: none;
+  }
+  .mc-toast {
+    position: absolute;
+    left: 50%;
+    top: 30%;
+    transform: translateX(-50%);
+    font-size: 1.8rem;
+    color: var(--mc-accent);
+    text-shadow: 2px 2px 0 var(--mc-shadow);
+    pointer-events: none;
+  }
+  .mc-held-name {
+    font-size: 1.4rem;
+    color: var(--mc-text);
+    text-shadow: 2px 2px 0 var(--mc-shadow);
+  }
+  .mc-hurt {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 40%, var(--mc-hurt) 100%);
+  }
+  .mc-hotbar {
+    position: relative;
+    display: flex;
+    padding: 2px;
+    width: 364px;
+    height: 44px;
+  }
+  .mc-pack-sprite {
+    display: inline-block;
+    flex-shrink: 0;
+    image-rendering: pixelated;
+    background-repeat: no-repeat;
+    pointer-events: none;
+  }
+  .mc-hotbar-texture {
+    position: absolute;
+    inset: 0;
+  }
+  .mc-hotbar-selection {
+    position: absolute;
+    top: -2px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .mc-status-bar {
+    display: flex;
+    align-items: center;
+    width: auto;
+    height: 18px;
+  }
+  .mc-status-icon {
+    position: relative;
+    width: 16px;
+    height: 18px;
+    margin-right: -1px;
+  }
+  .mc-sprite-layer {
+    position: absolute;
+    inset: 0;
+  }
+  .mc-slot {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--mc-slot);
+    box-shadow:
+      inset 2px 2px 0 var(--mc-slot-dark),
+      inset -2px -2px 0 var(--mc-panel-light);
+    cursor: pointer;
+  }
+  .mc-hotbar .mc-slot {
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    box-shadow: none;
+  }
+  .mc-hotbar .mc-slot-active {
+    box-shadow: none;
+    z-index: 1;
+  }
+  .mc-count {
+    position: absolute;
+    right: 2px;
+    bottom: -2px;
+    font-size: 1.35rem;
+    color: var(--mc-text);
+    text-shadow: 2px 2px 0 var(--mc-shadow);
+    pointer-events: none;
+  }
+  .mc-panel {
+    padding: 1rem;
+    background: var(--mc-panel);
+    color: var(--mc-text-dark);
+    border: 3px solid var(--mc-slot-dark);
+    box-shadow:
+      inset 3px 3px 0 var(--mc-panel-light),
+      inset -3px -3px 0 var(--mc-panel-dark);
+    font-size: 1.2rem;
+  }
+  .mc-chat-line {
+    padding: 0.1rem 0.4rem;
+    font-size: 1.1rem;
+    color: var(--mc-text);
+    background: color-mix(in oklab, var(--mc-shadow) 55%, transparent);
+    text-shadow: 1px 1px 0 var(--mc-shadow);
+    width: fit-content;
+  }
+  .mc-chat-input {
+    width: 100%;
+    padding: 0.3rem 0.5rem;
+    font-size: 1.2rem;
+    color: var(--mc-text);
+    background: color-mix(in oklab, var(--mc-shadow) 70%, transparent);
+    outline: none;
+    border: 0;
+  }
+  .mc-preview {
+    width: 220px;
+    height: 220px;
+    background: var(--mc-slot);
+    border: 3px solid var(--mc-slot-dark);
+    cursor: grab;
+  }
+  .mc-panel-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.4rem;
+  }
+  .mc-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 44px);
+    gap: 2px;
+  }
+  .mc-recipes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .mc-recipe {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 2px 6px 2px 2px;
+    background: var(--mc-panel-light);
+    border: 2px solid var(--mc-panel-dark);
+    font-size: 1.1rem;
+    color: var(--mc-text-dark);
+  }
+  .mc-recipe:hover:not(:disabled) {
+    border-color: var(--mc-accent);
+  }
+  .mc-recipe-off {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .mc-gui {
+    position: relative;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    background-position: 0 0;
+  }
+  .mc-gui-slot {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .mc-gui-slot:hover {
+    background: color-mix(in oklab, var(--mc-text) 45%, transparent);
+  }
+  .mc-gui-icon {
+    display: flex;
+    transform: scale(1.4);
+    pointer-events: none;
+  }
+  .mc-gui-label {
+    position: absolute;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--mc-text-dark);
+    pointer-events: none;
+  }
+  .mc-gui-player {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .mc-item-img {
+    width: 32px;
+    height: 32px;
+    image-rendering: pixelated;
+    pointer-events: none;
+  }
 
   /* 3D isometric block icons */
-  .mc-cube-wrap { width: 30px; height: 30px; perspective: none; pointer-events: none; }
-  .mc-cube { position: relative; width: 20px; height: 20px; margin: 5px; transform-style: preserve-3d; transform: rotateX(-30deg) rotateY(45deg); }
-  .mc-face { position: absolute; width: 20px; height: 20px; background-image: var(--atlas-url, url(/textures/atlas.png)); background-size: 800% 1600%; image-rendering: pixelated; backface-visibility: hidden; }
-  .mc-top { transform: rotateX(90deg) translateZ(10px); }
-  .mc-front { transform: translateZ(10px); filter: brightness(0.8); }
-  .mc-right { transform: rotateY(90deg) translateZ(10px); filter: brightness(0.62); }
+  .mc-cube-wrap {
+    width: 30px;
+    height: 30px;
+    perspective: none;
+    pointer-events: none;
+  }
+  .mc-cube {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    margin: 5px;
+    transform-style: preserve-3d;
+    transform: rotateX(-30deg) rotateY(45deg);
+  }
+  .mc-face {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-image: var(--atlas-url, url(/textures/atlas.png));
+    background-size: 800% 1600%;
+    image-rendering: pixelated;
+    backface-visibility: hidden;
+  }
+  .mc-top {
+    transform: rotateX(90deg) translateZ(10px);
+    filter: brightness(1);
+  }
+  .mc-front {
+    transform: translateZ(10px);
+    filter: brightness(0.85);
+  }
+  .mc-left {
+    transform: rotateY(-90deg) translateZ(10px);
+    filter: brightness(0.68);
+  }
+  .mc-right {
+    transform: rotateY(90deg) translateZ(10px);
+    filter: brightness(0.62);
+  }
 
   /* hearts & hunger as pixel shapes */
-  .mc-heart, .mc-food { width: 16px; height: 16px; display: inline-block; }
-  .mc-heart { clip-path: polygon(0 25%, 25% 0, 50% 20%, 75% 0, 100% 25%, 100% 50%, 50% 100%, 0 50%); }
-  .mc-food { clip-path: polygon(30% 0, 100% 0, 100% 70%, 70% 100%, 0 100%, 0 30%); border-radius: 2px; }
-  .mc-heart.mc-full { background: var(--mc-heart); }
-  .mc-heart.mc-half { background: linear-gradient(90deg, var(--mc-heart) 50%, var(--mc-empty) 50%); }
-  .mc-food.mc-full { background: var(--mc-food); }
-  .mc-food.mc-half { background: linear-gradient(90deg, var(--mc-empty) 50%, var(--mc-food) 50%); }
-  .mc-empty { background: var(--mc-empty); }
+  .mc-heart,
+  .mc-food {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+  }
+  .mc-heart {
+    clip-path: polygon(0 25%, 25% 0, 50% 20%, 75% 0, 100% 25%, 100% 50%, 50% 100%, 0 50%);
+  }
+  .mc-food {
+    clip-path: polygon(30% 0, 100% 0, 100% 70%, 70% 100%, 0 100%, 0 30%);
+    border-radius: 2px;
+  }
+  .mc-heart.mc-full {
+    background: var(--mc-heart);
+  }
+  .mc-heart.mc-half {
+    background: linear-gradient(90deg, var(--mc-heart) 50%, var(--mc-empty) 50%);
+  }
+  .mc-food.mc-full {
+    background: var(--mc-food);
+  }
+  .mc-food.mc-half {
+    background: linear-gradient(90deg, var(--mc-empty) 50%, var(--mc-food) 50%);
+  }
+  .mc-empty {
+    background: var(--mc-empty);
+  }
 }

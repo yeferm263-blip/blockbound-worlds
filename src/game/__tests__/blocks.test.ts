@@ -16,5 +16,6 @@ describe("block rules", () => {
     expect(breakInfo(B.DIAMOND_ORE, "iron_pickaxe").drops).toBe(true);
     expect(blockDrop(B.DIAMOND_ORE)).toBe("diamond");
   });
-  it("bedrock is unbreakable", () => expect(breakInfo(B.BEDROCK, "diamond_pickaxe").time).toBe(Infinity));
+  it("bedrock is unbreakable", () =>
+    expect(breakInfo(B.BEDROCK, "diamond_pickaxe").time).toBe(Infinity));
 });

@@ -5,7 +5,15 @@ import { animateMobGait, buildMob, type MobType } from "../mobs";
 vi.spyOn(THREE.TextureLoader.prototype, "load").mockImplementation(() => new THREE.Texture());
 
 describe("attached animal limbs", () => {
-  for (const type of ["pig", "cow", "sheep", "chicken", "creeper", "zombie", "skeleton"] as MobType[]) {
+  for (const type of [
+    "pig",
+    "cow",
+    "sheep",
+    "chicken",
+    "creeper",
+    "zombie",
+    "skeleton",
+  ] as MobType[]) {
     it(`${type} hip joints remain inside its torso throughout walking`, () => {
       const model = buildMob(type);
       if (!model.body) throw new Error("Missing body");
@@ -13,7 +21,8 @@ describe("attached animal limbs", () => {
         model.root.position.y = animateMobGait(model, type, phase, 1, phase);
         model.root.updateWorldMatrix(true, true);
         const bounds = new THREE.Box3().setFromObject(model.body).expandByScalar(0.00001);
-        for (const leg of model.legs) expect(bounds.containsPoint(leg.getWorldPosition(new THREE.Vector3()))).toBe(true);
+        for (const leg of model.legs)
+          expect(bounds.containsPoint(leg.getWorldPosition(new THREE.Vector3()))).toBe(true);
       }
     });
   }

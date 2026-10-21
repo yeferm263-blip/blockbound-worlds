@@ -1,211 +1,205 @@
 {
-"dig.grass": [
-"/__l5e/assets-v1/17750dc3-1af8-4e69-a0fc-5273090458e5/dig_grass1.ogg",
-"/__l5e/assets-v1/5fd4b200-8b6c-47eb-9a56-c3c7bbd90773/dig_grass2.ogg",
-"/__l5e/assets-v1/82216893-072f-4607-946f-1a6db1c1fdfb/dig_grass3.ogg",
-"/__l5e/assets-v1/a4c03592-8b5f-438a-b376-4fa047e6702d/dig_grass4.ogg"
-],
-"step.grass": [
-"/__l5e/assets-v1/99c88e43-5024-43e7-9202-7431d664e865/step_grass1.ogg",
-"/__l5e/assets-v1/f842d6a8-8e76-46d8-bd7f-18def51a7349/step_grass2.ogg",
-"/__l5e/assets-v1/a7cca683-3347-4929-ace1-d06d2515b6ca/step_grass3.ogg",
-"/__l5e/assets-v1/38fe95a6-9544-4097-99a2-adfdfa510046/step_grass4.ogg",
-"/__l5e/assets-v1/391db8e4-6d15-4a44-bfc8-04da1e693f66/step_grass5.ogg",
-"/__l5e/assets-v1/5eaea43c-f940-46b1-b0c4-595b3063f476/step_grass6.ogg"
-],
-"dig.stone": [
-"/__l5e/assets-v1/3f103c15-5563-4b63-b92b-cdcb94b24fd0/dig_stone1.ogg",
-"/__l5e/assets-v1/b8495c13-2756-4d2c-862b-6927454946f0/dig_stone2.ogg",
-"/__l5e/assets-v1/d472881c-09e2-4161-90b2-0ed71476dd35/dig_stone3.ogg",
-"/__l5e/assets-v1/548b28d9-33c8-44c6-925f-5b40f0828179/dig_stone4.ogg"
-],
-"step.stone": [
-"/__l5e/assets-v1/1142689c-6557-49c7-9ffb-f5d5a4851777/step_stone1.ogg",
-"/__l5e/assets-v1/a0c94ec6-f758-45ea-b607-c53575d64ff7/step_stone2.ogg",
-"/__l5e/assets-v1/3f8e3f83-7d80-4f3a-ae46-230b101745a1/step_stone3.ogg",
-"/__l5e/assets-v1/3c3a3c9e-35fa-4fc6-8c50-b4354ce0eb07/step_stone4.ogg",
-"/__l5e/assets-v1/d25583e1-8978-4927-907a-16735b84f569/step_stone5.ogg",
-"/__l5e/assets-v1/41a16e02-6616-4dff-a5dc-d11210cd1ad5/step_stone6.ogg"
-],
-"dig.wood": [
-"/__l5e/assets-v1/4366aa1b-1c5e-43ac-870a-c9940d5b30bf/dig_wood1.ogg",
-"/__l5e/assets-v1/9a614b5b-ca2f-4756-8aee-a08e31baf2bd/dig_wood2.ogg",
-"/__l5e/assets-v1/4887b745-0dff-4781-af69-f08f6ff0263a/dig_wood3.ogg",
-"/__l5e/assets-v1/03823358-d1e1-47ab-86d8-cad30a48301b/dig_wood4.ogg"
-],
-"step.wood": [
-"/__l5e/assets-v1/a862849d-c2a4-46a3-acbe-43dea37d7782/step_wood1.ogg",
-"/__l5e/assets-v1/f56a9142-fbee-4117-aa5d-9130a5b68576/step_wood2.ogg",
-"/__l5e/assets-v1/a01413a1-4be0-4985-bc44-89fabd77e96f/step_wood3.ogg",
-"/__l5e/assets-v1/fddc226f-7174-4fb6-943c-66169e302729/step_wood4.ogg",
-"/__l5e/assets-v1/7b39c1cc-12b6-441c-8e0f-b0538bb460c6/step_wood5.ogg",
-"/__l5e/assets-v1/9e6cc146-c568-4205-8855-d3abae75b74b/step_wood6.ogg"
-],
-"dig.gravel": [
-"/__l5e/assets-v1/f0c3b6f6-7b67-45c2-9c08-ddffab680f89/dig_gravel1.ogg",
-"/__l5e/assets-v1/cbf54a84-d1c1-4798-9cd3-f823665c611b/dig_gravel2.ogg",
-"/__l5e/assets-v1/df584989-1564-48cf-9be3-865bf99b40b9/dig_gravel3.ogg",
-"/__l5e/assets-v1/4f830a6d-40cd-4d63-92f6-5d3bf2375897/dig_gravel4.ogg"
-],
-"step.gravel": [
-"/__l5e/assets-v1/9b6af67d-9cb6-41de-88dd-4ce81f3d8c23/step_gravel1.ogg",
-"/__l5e/assets-v1/7fb0d635-4666-47bd-8df8-15c139693866/step_gravel2.ogg",
-"/__l5e/assets-v1/54180b2d-00f0-4c0d-a375-180f99fa27ef/step_gravel3.ogg",
-"/__l5e/assets-v1/808da3fc-40a3-4c17-aa42-c337f54afebd/step_gravel4.ogg"
-],
-"dig.sand": [
-"/__l5e/assets-v1/d70a7444-fc56-45e2-9dce-c8cd5d2929c1/dig_sand1.ogg",
-"/__l5e/assets-v1/faa7799d-b583-4e7d-9064-780a78e31ab9/dig_sand2.ogg",
-"/__l5e/assets-v1/970ce8f3-9dc5-41e4-b846-2817979d4bf5/dig_sand3.ogg",
-"/__l5e/assets-v1/9662649b-1ffc-4436-99ed-1fc05e29b4ed/dig_sand4.ogg"
-],
-"step.sand": [
-"/__l5e/assets-v1/c9b0129a-416d-4093-8a5a-2c2938f26eb1/step_sand1.ogg",
-"/__l5e/assets-v1/d4e91c4e-eab0-4e5c-a338-54838b4b2fd3/step_sand2.ogg",
-"/__l5e/assets-v1/25b3aad9-b58c-4f69-a41a-606a1774fb7b/step_sand3.ogg",
-"/__l5e/assets-v1/8fa4f792-86de-45ae-bc20-bcccb6d76e68/step_sand4.ogg",
-"/__l5e/assets-v1/11dbdf4d-6bab-4859-b466-e94a8cb84a94/step_sand5.ogg"
-],
-"dig.cloth": [
-"/__l5e/assets-v1/64946644-4254-40de-a841-feb1bb912247/dig_cloth1.ogg",
-"/__l5e/assets-v1/bedd07dc-f5d9-4ed0-80d1-96d0e0147ad6/dig_cloth2.ogg",
-"/__l5e/assets-v1/d6a63f0f-296c-4f1d-9a8e-2a2948bf2d87/dig_cloth3.ogg",
-"/__l5e/assets-v1/ed9354f5-d151-444f-80c5-d2cdf4609e3f/dig_cloth4.ogg"
-],
-"step.cloth": [
-"/__l5e/assets-v1/966c8464-1bf1-4b51-9ac4-983238195a66/step_cloth1.ogg",
-"/__l5e/assets-v1/23872c9e-f620-4d92-b05e-09212f809f61/step_cloth2.ogg",
-"/__l5e/assets-v1/c8946b2d-41ce-43e1-975e-6dfdacbc0c18/step_cloth3.ogg",
-"/__l5e/assets-v1/15e17b73-d824-45b8-acc8-cb0c1b46e451/step_cloth4.ogg"
-],
-"dig.snow": [
-"/__l5e/assets-v1/d8ca4df0-afff-4a9e-8aae-8258f1164f3c/dig_snow1.ogg",
-"/__l5e/assets-v1/99a81c1c-55bd-4878-9386-d7de9d4f3528/dig_snow2.ogg",
-"/__l5e/assets-v1/1ea30ab3-727e-4405-95c8-678a5621639d/dig_snow3.ogg",
-"/__l5e/assets-v1/db0133ce-be55-459c-a0af-1b49f3861891/dig_snow4.ogg"
-],
-"step.snow": [
-"/__l5e/assets-v1/54efd870-7459-4302-8237-8d1d1ae37d03/step_snow1.ogg",
-"/__l5e/assets-v1/5c61241d-1e82-443a-8704-ac8b68d9cdd0/step_snow2.ogg",
-"/__l5e/assets-v1/9a18bd91-a562-44e1-8067-c8a39b02fde7/step_snow3.ogg",
-"/__l5e/assets-v1/6bc99b7a-1a12-49a9-8606-c5fdaed3f49b/step_snow4.ogg"
-],
-"glass": [
-"/__l5e/assets-v1/99fc4b13-3b4b-48d2-9e78-06bec56fa694/random_glass1.ogg",
-"/__l5e/assets-v1/f74d0c0e-9f0a-41fb-b251-06899ee2975c/random_glass2.ogg",
-"/__l5e/assets-v1/c7520604-d897-452c-b5c7-9f42bb2aa06c/random_glass3.ogg"
-],
-"hurt": [
-"/__l5e/assets-v1/9e5d8a23-27e3-4e9c-8884-704666976f1e/damage_hit1.ogg",
-"/__l5e/assets-v1/23302783-852e-41b5-8c3a-08354fa4f462/damage_hit2.ogg",
-"/__l5e/assets-v1/7b6416e7-c854-4b35-89c0-b8e491638efa/damage_hit3.ogg"
-],
-"eat": [
-"/__l5e/assets-v1/ca1234ff-0728-45e6-acfe-2aa70a6ec453/random_eat1.ogg",
-"/__l5e/assets-v1/5656c86a-713d-4e84-a4dc-d13db0608ae6/random_eat2.ogg",
-"/__l5e/assets-v1/25e8cdd1-3d79-4802-87ec-fdf3da9acab5/random_eat3.ogg"
-],
-"burp": [
-"/__l5e/assets-v1/05e32672-8bcd-4f9b-9dda-917afe510857/random_burp.ogg"
-],
-"pop": [
-"/__l5e/assets-v1/28ad03ae-12e9-408f-b386-ad50f6bef4d4/random_pop.ogg"
-],
-"explode": [
-"/__l5e/assets-v1/cb036d7f-3171-4b9f-8b5c-3f759d7be030/random_explode1.ogg",
-"/__l5e/assets-v1/d1f5340f-b11d-4cc9-b9a8-172313497317/random_explode2.ogg",
-"/__l5e/assets-v1/37586ebd-812f-41c5-86d4-7101c9c17a8a/random_explode3.ogg",
-"/__l5e/assets-v1/1e749f68-a2d1-436c-a2e3-b19e3dc5c65a/random_explode4.ogg"
-],
-"fuse": [
-"/__l5e/assets-v1/4e555fd4-9384-47b8-b304-be9eaee32028/random_fuse.ogg"
-],
-"swing.weak": [
-"/__l5e/assets-v1/428d46e1-e0e0-4614-9f15-760043f9cf32/entity_player_attack_weak1.ogg",
-"/__l5e/assets-v1/c0e7a4e2-4f46-41f1-b0b4-0770058045af/entity_player_attack_weak2.ogg",
-"/__l5e/assets-v1/00203203-26dd-4a97-a9da-d0b878d37601/entity_player_attack_weak3.ogg",
-"/__l5e/assets-v1/ed9e4dd6-6370-4b3e-9887-6942e47da340/entity_player_attack_weak4.ogg"
-],
-"swing.strong": [
-"/__l5e/assets-v1/1f0a2514-cad8-46d9-a3be-81fc5afa21d0/entity_player_attack_strong1.ogg",
-"/__l5e/assets-v1/4514f64e-1923-4e3d-804c-820e982d3e7d/entity_player_attack_strong2.ogg",
-"/__l5e/assets-v1/13cbe40d-4ac1-4262-af3d-e10ba9d1f3fa/entity_player_attack_strong3.ogg",
-"/__l5e/assets-v1/7a03488b-c46e-4bb0-aef3-406ca5cf118c/entity_player_attack_strong4.ogg"
-],
-"swing.sweep": [
-"/__l5e/assets-v1/ac4f0276-dc7a-4417-95ba-e061d058dae7/entity_player_attack_sweep1.ogg",
-"/__l5e/assets-v1/c590b663-1e8f-4366-9548-a5730726a333/entity_player_attack_sweep2.ogg",
-"/__l5e/assets-v1/5725e4e9-4c52-4d4e-9e44-fa5abbe2b80c/entity_player_attack_sweep3.ogg",
-"/__l5e/assets-v1/b36f3244-d16d-48f4-b8ac-d33a3a8a1b56/entity_player_attack_sweep4.ogg"
-],
-"mob.cow": [
-"/__l5e/assets-v1/5ff00a73-c41f-43b9-a481-4fac0bfb1411/mob_cow_say1.ogg",
-"/__l5e/assets-v1/91922b5c-5259-44ae-8d6a-a939e9cbfaff/mob_cow_say2.ogg",
-"/__l5e/assets-v1/868814a1-d13c-45e1-9320-b72b98c72c90/mob_cow_say3.ogg",
-"/__l5e/assets-v1/166bc1db-9e45-4aa4-8970-b84db753a540/mob_cow_say4.ogg"
-],
-"hurt.cow": [
-"/__l5e/assets-v1/3a3e0205-c579-4f6c-a49b-8d6f4e0a818a/mob_cow_hurt1.ogg",
-"/__l5e/assets-v1/46666707-7fda-49e3-9e06-a727d8991a0a/mob_cow_hurt2.ogg",
-"/__l5e/assets-v1/4c2ce822-e757-47c1-80a1-81f63d1bc36f/mob_cow_hurt3.ogg"
-],
-"mob.pig": [
-"/__l5e/assets-v1/267de78a-e42e-444d-a0a4-7bb07b061636/mob_pig_say1.ogg",
-"/__l5e/assets-v1/3b5b1336-152c-44ba-a86a-5abe2d5785c6/mob_pig_say2.ogg",
-"/__l5e/assets-v1/0e84a0e0-7431-430d-adc8-1c3a9325a7b2/mob_pig_say3.ogg"
-],
-"mob.sheep": [
-"/__l5e/assets-v1/0ea04e8c-14b1-4a6b-ae83-eac86d312018/mob_sheep_say1.ogg",
-"/__l5e/assets-v1/c0d17d0f-ce22-4c0c-afd8-4f196a2fd796/mob_sheep_say2.ogg",
-"/__l5e/assets-v1/d1fc3494-58f8-4366-a5e6-6e3676a07b9f/mob_sheep_say3.ogg"
-],
-"mob.chicken": [
-"/__l5e/assets-v1/3a31db4d-e19a-4b4e-a3ef-71ae7dd420b7/mob_chicken_say1.ogg",
-"/__l5e/assets-v1/c70f812d-2eae-4956-88de-9e56e388dde9/mob_chicken_say2.ogg",
-"/__l5e/assets-v1/f956fc40-f777-41ec-b136-298865283a2c/mob_chicken_say3.ogg"
-],
-"hurt.chicken": [
-"/__l5e/assets-v1/27b60849-4f5e-4b45-b715-9ecb95b7cbee/mob_chicken_hurt1.ogg",
-"/__l5e/assets-v1/a17b55e0-d44e-4c9a-8faa-1e5cd8090cd2/mob_chicken_hurt2.ogg"
-],
-"mob.zombie": [
-"/__l5e/assets-v1/9d0be374-7264-4cc4-bc98-6c9e63e79797/mob_zombie_say1.ogg",
-"/__l5e/assets-v1/ec702352-a876-498c-b784-c61882d00101/mob_zombie_say2.ogg",
-"/__l5e/assets-v1/c65dabe1-f696-4abe-b034-38b3636b87eb/mob_zombie_say3.ogg"
-],
-"hurt.zombie": [
-"/__l5e/assets-v1/d519f5a6-0e1a-4627-82e5-e0dd393c1bfc/mob_zombie_hurt1.ogg",
-"/__l5e/assets-v1/b611091e-2235-4ed8-b857-69f37d9a922b/mob_zombie_hurt2.ogg"
-],
-"mob.skeleton": [
-"/__l5e/assets-v1/bb0dc92c-2464-4a75-9cd3-52077a321b9a/mob_skeleton_say1.ogg",
-"/__l5e/assets-v1/745843b9-df46-46fd-9816-82de09d5c5dd/mob_skeleton_say2.ogg",
-"/__l5e/assets-v1/6d99c9ba-f39e-42c1-8877-91eb460d65ce/mob_skeleton_say3.ogg"
-],
-"hurt.skeleton": [
-"/__l5e/assets-v1/f85170d1-dca9-44e7-8484-e21c6fff113e/mob_skeleton_hurt1.ogg",
-"/__l5e/assets-v1/2a885a6c-5c46-4418-8bd1-7549f2b625db/mob_skeleton_hurt2.ogg",
-"/__l5e/assets-v1/f5f04516-9497-44cd-81c0-d70644418ece/mob_skeleton_hurt3.ogg",
-"/__l5e/assets-v1/a860dcbd-42c6-435d-8ced-f4d1e4b5280a/mob_skeleton_hurt4.ogg"
-],
-"mob.spider": [
-"/__l5e/assets-v1/a5cc2fac-3606-42bc-964c-f719341fe6d7/mob_spider_say1.ogg",
-"/__l5e/assets-v1/9b466804-7e9f-43f9-8256-8d1e18a529d9/mob_spider_say2.ogg",
-"/__l5e/assets-v1/7aa89560-ccb4-4f1d-a95e-7896de221637/mob_spider_say3.ogg",
-"/__l5e/assets-v1/a89a7997-bea5-40f3-8a03-3fca23011e2b/mob_spider_say4.ogg"
-],
-"mob.creeper": [
-"/__l5e/assets-v1/434cdb6c-675d-4fbb-a7a6-ee615f6c9bd6/mob_creeper_say1.ogg",
-"/__l5e/assets-v1/8bbb64d7-0876-4bc1-9143-141b34ae262d/mob_creeper_say2.ogg",
-"/__l5e/assets-v1/785e0824-0a45-451f-a016-45bba0e32a16/mob_creeper_say3.ogg",
-"/__l5e/assets-v1/557b5ed4-692f-4205-95e6-5b990b4f3f13/mob_creeper_say4.ogg"
-],
-"music": [
-"/__l5e/assets-v1/685213a5-e744-4b2f-82a8-ececed85183e/music_game_calm1.ogg",
-"/__l5e/assets-v1/54164d9b-7fb2-44b5-873a-acdb872930b1/music_game_calm2.ogg",
-"/__l5e/assets-v1/eeaafc61-a29b-4edb-b907-e49d46e00819/music_game_calm3.ogg",
-"/__l5e/assets-v1/d8ef808a-7f42-4cbf-bf2d-3f8d6ac8927e/music_game_hal1.ogg",
-"/__l5e/assets-v1/3c564cc8-a63c-49f9-9938-6cc1fdc7cd42/music_game_hal2.ogg",
-"/__l5e/assets-v1/92268abe-11fa-429c-b6f4-65cb542d9e7c/music_game_piano1.ogg"
-]
+  "dig.grass": [
+    "/__l5e/assets-v1/17750dc3-1af8-4e69-a0fc-5273090458e5/dig_grass1.ogg",
+    "/__l5e/assets-v1/5fd4b200-8b6c-47eb-9a56-c3c7bbd90773/dig_grass2.ogg",
+    "/__l5e/assets-v1/82216893-072f-4607-946f-1a6db1c1fdfb/dig_grass3.ogg",
+    "/__l5e/assets-v1/a4c03592-8b5f-438a-b376-4fa047e6702d/dig_grass4.ogg"
+  ],
+  "step.grass": [
+    "/__l5e/assets-v1/99c88e43-5024-43e7-9202-7431d664e865/step_grass1.ogg",
+    "/__l5e/assets-v1/f842d6a8-8e76-46d8-bd7f-18def51a7349/step_grass2.ogg",
+    "/__l5e/assets-v1/a7cca683-3347-4929-ace1-d06d2515b6ca/step_grass3.ogg",
+    "/__l5e/assets-v1/38fe95a6-9544-4097-99a2-adfdfa510046/step_grass4.ogg",
+    "/__l5e/assets-v1/391db8e4-6d15-4a44-bfc8-04da1e693f66/step_grass5.ogg",
+    "/__l5e/assets-v1/5eaea43c-f940-46b1-b0c4-595b3063f476/step_grass6.ogg"
+  ],
+  "dig.stone": [
+    "/__l5e/assets-v1/3f103c15-5563-4b63-b92b-cdcb94b24fd0/dig_stone1.ogg",
+    "/__l5e/assets-v1/b8495c13-2756-4d2c-862b-6927454946f0/dig_stone2.ogg",
+    "/__l5e/assets-v1/d472881c-09e2-4161-90b2-0ed71476dd35/dig_stone3.ogg",
+    "/__l5e/assets-v1/548b28d9-33c8-44c6-925f-5b40f0828179/dig_stone4.ogg"
+  ],
+  "step.stone": [
+    "/__l5e/assets-v1/1142689c-6557-49c7-9ffb-f5d5a4851777/step_stone1.ogg",
+    "/__l5e/assets-v1/a0c94ec6-f758-45ea-b607-c53575d64ff7/step_stone2.ogg",
+    "/__l5e/assets-v1/3f8e3f83-7d80-4f3a-ae46-230b101745a1/step_stone3.ogg",
+    "/__l5e/assets-v1/3c3a3c9e-35fa-4fc6-8c50-b4354ce0eb07/step_stone4.ogg",
+    "/__l5e/assets-v1/d25583e1-8978-4927-907a-16735b84f569/step_stone5.ogg",
+    "/__l5e/assets-v1/41a16e02-6616-4dff-a5dc-d11210cd1ad5/step_stone6.ogg"
+  ],
+  "dig.wood": [
+    "/__l5e/assets-v1/4366aa1b-1c5e-43ac-870a-c9940d5b30bf/dig_wood1.ogg",
+    "/__l5e/assets-v1/9a614b5b-ca2f-4756-8aee-a08e31baf2bd/dig_wood2.ogg",
+    "/__l5e/assets-v1/4887b745-0dff-4781-af69-f08f6ff0263a/dig_wood3.ogg",
+    "/__l5e/assets-v1/03823358-d1e1-47ab-86d8-cad30a48301b/dig_wood4.ogg"
+  ],
+  "step.wood": [
+    "/__l5e/assets-v1/a862849d-c2a4-46a3-acbe-43dea37d7782/step_wood1.ogg",
+    "/__l5e/assets-v1/f56a9142-fbee-4117-aa5d-9130a5b68576/step_wood2.ogg",
+    "/__l5e/assets-v1/a01413a1-4be0-4985-bc44-89fabd77e96f/step_wood3.ogg",
+    "/__l5e/assets-v1/fddc226f-7174-4fb6-943c-66169e302729/step_wood4.ogg",
+    "/__l5e/assets-v1/7b39c1cc-12b6-441c-8e0f-b0538bb460c6/step_wood5.ogg",
+    "/__l5e/assets-v1/9e6cc146-c568-4205-8855-d3abae75b74b/step_wood6.ogg"
+  ],
+  "dig.gravel": [
+    "/__l5e/assets-v1/f0c3b6f6-7b67-45c2-9c08-ddffab680f89/dig_gravel1.ogg",
+    "/__l5e/assets-v1/cbf54a84-d1c1-4798-9cd3-f823665c611b/dig_gravel2.ogg",
+    "/__l5e/assets-v1/df584989-1564-48cf-9be3-865bf99b40b9/dig_gravel3.ogg",
+    "/__l5e/assets-v1/4f830a6d-40cd-4d63-92f6-5d3bf2375897/dig_gravel4.ogg"
+  ],
+  "step.gravel": [
+    "/__l5e/assets-v1/9b6af67d-9cb6-41de-88dd-4ce81f3d8c23/step_gravel1.ogg",
+    "/__l5e/assets-v1/7fb0d635-4666-47bd-8df8-15c139693866/step_gravel2.ogg",
+    "/__l5e/assets-v1/54180b2d-00f0-4c0d-a375-180f99fa27ef/step_gravel3.ogg",
+    "/__l5e/assets-v1/808da3fc-40a3-4c17-aa42-c337f54afebd/step_gravel4.ogg"
+  ],
+  "dig.sand": [
+    "/__l5e/assets-v1/d70a7444-fc56-45e2-9dce-c8cd5d2929c1/dig_sand1.ogg",
+    "/__l5e/assets-v1/faa7799d-b583-4e7d-9064-780a78e31ab9/dig_sand2.ogg",
+    "/__l5e/assets-v1/970ce8f3-9dc5-41e4-b846-2817979d4bf5/dig_sand3.ogg",
+    "/__l5e/assets-v1/9662649b-1ffc-4436-99ed-1fc05e29b4ed/dig_sand4.ogg"
+  ],
+  "step.sand": [
+    "/__l5e/assets-v1/c9b0129a-416d-4093-8a5a-2c2938f26eb1/step_sand1.ogg",
+    "/__l5e/assets-v1/d4e91c4e-eab0-4e5c-a338-54838b4b2fd3/step_sand2.ogg",
+    "/__l5e/assets-v1/25b3aad9-b58c-4f69-a41a-606a1774fb7b/step_sand3.ogg",
+    "/__l5e/assets-v1/8fa4f792-86de-45ae-bc20-bcccb6d76e68/step_sand4.ogg",
+    "/__l5e/assets-v1/11dbdf4d-6bab-4859-b466-e94a8cb84a94/step_sand5.ogg"
+  ],
+  "dig.cloth": [
+    "/__l5e/assets-v1/64946644-4254-40de-a841-feb1bb912247/dig_cloth1.ogg",
+    "/__l5e/assets-v1/bedd07dc-f5d9-4ed0-80d1-96d0e0147ad6/dig_cloth2.ogg",
+    "/__l5e/assets-v1/d6a63f0f-296c-4f1d-9a8e-2a2948bf2d87/dig_cloth3.ogg",
+    "/__l5e/assets-v1/ed9354f5-d151-444f-80c5-d2cdf4609e3f/dig_cloth4.ogg"
+  ],
+  "step.cloth": [
+    "/__l5e/assets-v1/966c8464-1bf1-4b51-9ac4-983238195a66/step_cloth1.ogg",
+    "/__l5e/assets-v1/23872c9e-f620-4d92-b05e-09212f809f61/step_cloth2.ogg",
+    "/__l5e/assets-v1/c8946b2d-41ce-43e1-975e-6dfdacbc0c18/step_cloth3.ogg",
+    "/__l5e/assets-v1/15e17b73-d824-45b8-acc8-cb0c1b46e451/step_cloth4.ogg"
+  ],
+  "dig.snow": [
+    "/__l5e/assets-v1/d8ca4df0-afff-4a9e-8aae-8258f1164f3c/dig_snow1.ogg",
+    "/__l5e/assets-v1/99a81c1c-55bd-4878-9386-d7de9d4f3528/dig_snow2.ogg",
+    "/__l5e/assets-v1/1ea30ab3-727e-4405-95c8-678a5621639d/dig_snow3.ogg",
+    "/__l5e/assets-v1/db0133ce-be55-459c-a0af-1b49f3861891/dig_snow4.ogg"
+  ],
+  "step.snow": [
+    "/__l5e/assets-v1/54efd870-7459-4302-8237-8d1d1ae37d03/step_snow1.ogg",
+    "/__l5e/assets-v1/5c61241d-1e82-443a-8704-ac8b68d9cdd0/step_snow2.ogg",
+    "/__l5e/assets-v1/9a18bd91-a562-44e1-8067-c8a39b02fde7/step_snow3.ogg",
+    "/__l5e/assets-v1/6bc99b7a-1a12-49a9-8606-c5fdaed3f49b/step_snow4.ogg"
+  ],
+  "glass": [
+    "/__l5e/assets-v1/99fc4b13-3b4b-48d2-9e78-06bec56fa694/random_glass1.ogg",
+    "/__l5e/assets-v1/f74d0c0e-9f0a-41fb-b251-06899ee2975c/random_glass2.ogg",
+    "/__l5e/assets-v1/c7520604-d897-452c-b5c7-9f42bb2aa06c/random_glass3.ogg"
+  ],
+  "hurt": [
+    "/__l5e/assets-v1/9e5d8a23-27e3-4e9c-8884-704666976f1e/damage_hit1.ogg",
+    "/__l5e/assets-v1/23302783-852e-41b5-8c3a-08354fa4f462/damage_hit2.ogg",
+    "/__l5e/assets-v1/7b6416e7-c854-4b35-89c0-b8e491638efa/damage_hit3.ogg"
+  ],
+  "eat": [
+    "/__l5e/assets-v1/ca1234ff-0728-45e6-acfe-2aa70a6ec453/random_eat1.ogg",
+    "/__l5e/assets-v1/5656c86a-713d-4e84-a4dc-d13db0608ae6/random_eat2.ogg",
+    "/__l5e/assets-v1/25e8cdd1-3d79-4802-87ec-fdf3da9acab5/random_eat3.ogg"
+  ],
+  "burp": ["/__l5e/assets-v1/05e32672-8bcd-4f9b-9dda-917afe510857/random_burp.ogg"],
+  "pop": ["/__l5e/assets-v1/28ad03ae-12e9-408f-b386-ad50f6bef4d4/random_pop.ogg"],
+  "explode": [
+    "/__l5e/assets-v1/cb036d7f-3171-4b9f-8b5c-3f759d7be030/random_explode1.ogg",
+    "/__l5e/assets-v1/d1f5340f-b11d-4cc9-b9a8-172313497317/random_explode2.ogg",
+    "/__l5e/assets-v1/37586ebd-812f-41c5-86d4-7101c9c17a8a/random_explode3.ogg",
+    "/__l5e/assets-v1/1e749f68-a2d1-436c-a2e3-b19e3dc5c65a/random_explode4.ogg"
+  ],
+  "fuse": ["/__l5e/assets-v1/4e555fd4-9384-47b8-b304-be9eaee32028/random_fuse.ogg"],
+  "swing.weak": [
+    "/__l5e/assets-v1/428d46e1-e0e0-4614-9f15-760043f9cf32/entity_player_attack_weak1.ogg",
+    "/__l5e/assets-v1/c0e7a4e2-4f46-41f1-b0b4-0770058045af/entity_player_attack_weak2.ogg",
+    "/__l5e/assets-v1/00203203-26dd-4a97-a9da-d0b878d37601/entity_player_attack_weak3.ogg",
+    "/__l5e/assets-v1/ed9e4dd6-6370-4b3e-9887-6942e47da340/entity_player_attack_weak4.ogg"
+  ],
+  "swing.strong": [
+    "/__l5e/assets-v1/1f0a2514-cad8-46d9-a3be-81fc5afa21d0/entity_player_attack_strong1.ogg",
+    "/__l5e/assets-v1/4514f64e-1923-4e3d-804c-820e982d3e7d/entity_player_attack_strong2.ogg",
+    "/__l5e/assets-v1/13cbe40d-4ac1-4262-af3d-e10ba9d1f3fa/entity_player_attack_strong3.ogg",
+    "/__l5e/assets-v1/7a03488b-c46e-4bb0-aef3-406ca5cf118c/entity_player_attack_strong4.ogg"
+  ],
+  "swing.sweep": [
+    "/__l5e/assets-v1/ac4f0276-dc7a-4417-95ba-e061d058dae7/entity_player_attack_sweep1.ogg",
+    "/__l5e/assets-v1/c590b663-1e8f-4366-9548-a5730726a333/entity_player_attack_sweep2.ogg",
+    "/__l5e/assets-v1/5725e4e9-4c52-4d4e-9e44-fa5abbe2b80c/entity_player_attack_sweep3.ogg",
+    "/__l5e/assets-v1/b36f3244-d16d-48f4-b8ac-d33a3a8a1b56/entity_player_attack_sweep4.ogg"
+  ],
+  "mob.cow": [
+    "/__l5e/assets-v1/5ff00a73-c41f-43b9-a481-4fac0bfb1411/mob_cow_say1.ogg",
+    "/__l5e/assets-v1/91922b5c-5259-44ae-8d6a-a939e9cbfaff/mob_cow_say2.ogg",
+    "/__l5e/assets-v1/868814a1-d13c-45e1-9320-b72b98c72c90/mob_cow_say3.ogg",
+    "/__l5e/assets-v1/166bc1db-9e45-4aa4-8970-b84db753a540/mob_cow_say4.ogg"
+  ],
+  "hurt.cow": [
+    "/__l5e/assets-v1/3a3e0205-c579-4f6c-a49b-8d6f4e0a818a/mob_cow_hurt1.ogg",
+    "/__l5e/assets-v1/46666707-7fda-49e3-9e06-a727d8991a0a/mob_cow_hurt2.ogg",
+    "/__l5e/assets-v1/4c2ce822-e757-47c1-80a1-81f63d1bc36f/mob_cow_hurt3.ogg"
+  ],
+  "mob.pig": [
+    "/__l5e/assets-v1/267de78a-e42e-444d-a0a4-7bb07b061636/mob_pig_say1.ogg",
+    "/__l5e/assets-v1/3b5b1336-152c-44ba-a86a-5abe2d5785c6/mob_pig_say2.ogg",
+    "/__l5e/assets-v1/0e84a0e0-7431-430d-adc8-1c3a9325a7b2/mob_pig_say3.ogg"
+  ],
+  "mob.sheep": [
+    "/__l5e/assets-v1/0ea04e8c-14b1-4a6b-ae83-eac86d312018/mob_sheep_say1.ogg",
+    "/__l5e/assets-v1/c0d17d0f-ce22-4c0c-afd8-4f196a2fd796/mob_sheep_say2.ogg",
+    "/__l5e/assets-v1/d1fc3494-58f8-4366-a5e6-6e3676a07b9f/mob_sheep_say3.ogg"
+  ],
+  "mob.chicken": [
+    "/__l5e/assets-v1/3a31db4d-e19a-4b4e-a3ef-71ae7dd420b7/mob_chicken_say1.ogg",
+    "/__l5e/assets-v1/c70f812d-2eae-4956-88de-9e56e388dde9/mob_chicken_say2.ogg",
+    "/__l5e/assets-v1/f956fc40-f777-41ec-b136-298865283a2c/mob_chicken_say3.ogg"
+  ],
+  "hurt.chicken": [
+    "/__l5e/assets-v1/27b60849-4f5e-4b45-b715-9ecb95b7cbee/mob_chicken_hurt1.ogg",
+    "/__l5e/assets-v1/a17b55e0-d44e-4c9a-8faa-1e5cd8090cd2/mob_chicken_hurt2.ogg"
+  ],
+  "mob.zombie": [
+    "/__l5e/assets-v1/9d0be374-7264-4cc4-bc98-6c9e63e79797/mob_zombie_say1.ogg",
+    "/__l5e/assets-v1/ec702352-a876-498c-b784-c61882d00101/mob_zombie_say2.ogg",
+    "/__l5e/assets-v1/c65dabe1-f696-4abe-b034-38b3636b87eb/mob_zombie_say3.ogg"
+  ],
+  "hurt.zombie": [
+    "/__l5e/assets-v1/d519f5a6-0e1a-4627-82e5-e0dd393c1bfc/mob_zombie_hurt1.ogg",
+    "/__l5e/assets-v1/b611091e-2235-4ed8-b857-69f37d9a922b/mob_zombie_hurt2.ogg"
+  ],
+  "mob.skeleton": [
+    "/__l5e/assets-v1/bb0dc92c-2464-4a75-9cd3-52077a321b9a/mob_skeleton_say1.ogg",
+    "/__l5e/assets-v1/745843b9-df46-46fd-9816-82de09d5c5dd/mob_skeleton_say2.ogg",
+    "/__l5e/assets-v1/6d99c9ba-f39e-42c1-8877-91eb460d65ce/mob_skeleton_say3.ogg"
+  ],
+  "hurt.skeleton": [
+    "/__l5e/assets-v1/f85170d1-dca9-44e7-8484-e21c6fff113e/mob_skeleton_hurt1.ogg",
+    "/__l5e/assets-v1/2a885a6c-5c46-4418-8bd1-7549f2b625db/mob_skeleton_hurt2.ogg",
+    "/__l5e/assets-v1/f5f04516-9497-44cd-81c0-d70644418ece/mob_skeleton_hurt3.ogg",
+    "/__l5e/assets-v1/a860dcbd-42c6-435d-8ced-f4d1e4b5280a/mob_skeleton_hurt4.ogg"
+  ],
+  "mob.spider": [
+    "/__l5e/assets-v1/a5cc2fac-3606-42bc-964c-f719341fe6d7/mob_spider_say1.ogg",
+    "/__l5e/assets-v1/9b466804-7e9f-43f9-8256-8d1e18a529d9/mob_spider_say2.ogg",
+    "/__l5e/assets-v1/7aa89560-ccb4-4f1d-a95e-7896de221637/mob_spider_say3.ogg",
+    "/__l5e/assets-v1/a89a7997-bea5-40f3-8a03-3fca23011e2b/mob_spider_say4.ogg"
+  ],
+  "mob.creeper": [
+    "/__l5e/assets-v1/434cdb6c-675d-4fbb-a7a6-ee615f6c9bd6/mob_creeper_say1.ogg",
+    "/__l5e/assets-v1/8bbb64d7-0876-4bc1-9143-141b34ae262d/mob_creeper_say2.ogg",
+    "/__l5e/assets-v1/785e0824-0a45-451f-a016-45bba0e32a16/mob_creeper_say3.ogg",
+    "/__l5e/assets-v1/557b5ed4-692f-4205-95e6-5b990b4f3f13/mob_creeper_say4.ogg"
+  ],
+  "music": [
+    "/__l5e/assets-v1/685213a5-e744-4b2f-82a8-ececed85183e/music_game_calm1.ogg",
+    "/__l5e/assets-v1/54164d9b-7fb2-44b5-873a-acdb872930b1/music_game_calm2.ogg",
+    "/__l5e/assets-v1/eeaafc61-a29b-4edb-b907-e49d46e00819/music_game_calm3.ogg",
+    "/__l5e/assets-v1/d8ef808a-7f42-4cbf-bf2d-3f8d6ac8927e/music_game_hal1.ogg",
+    "/__l5e/assets-v1/3c564cc8-a63c-49f9-9938-6cc1fdc7cd42/music_game_hal2.ogg",
+    "/__l5e/assets-v1/92268abe-11fa-429c-b6f4-65cb542d9e7c/music_game_piano1.ogg"
+  ]
 }
