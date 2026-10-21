@@ -186,7 +186,7 @@ function InventoryUI({ s, engine }: { s: GameState; engine: Engine }) {
     <div className="mc-overlay mc-overlay-soft" onMouseDown={(e) => { if (e.target === e.currentTarget) engine.closeUI(); }}>
       <div className="mc-gui" style={{ width: 176 * S, height: 166 * S, backgroundImage: `url(${GUI_BG[kind]})`, backgroundSize: `${256 * S}px ${256 * S}px` }} onContextMenu={(e) => e.preventDefault()}>
         <span className="mc-gui-label" style={{ left: titlePos.x * S, top: titlePos.y * S - 4 }}>{title}</span>
-        <span className="mc-gui-label" style={{ left: 8 * S, top: 72 * S - 4 }}>Inventario</span>
+        {kind !== "inventory" && <span className="mc-gui-label" style={{ left: 8 * S, top: 72 * S - 4 }}>Inventario</span>}
         {gridCells.map((c) => <GuiSlot key={c.i} x={c.x} y={c.y} slot={s.grid[c.i]} onClick={(r) => engine.clickGrid(c.i, r)} />)}
         <GuiSlot x={out.x} y={out.y} slot={result ? { id: result.out, count: result.count } : null} onClick={take} />
         {s.slots.slice(9).map((sl, i) => <GuiSlot key={"m" + i} x={8 + (i % 9) * 18} y={84 + Math.floor(i / 9) * 18} slot={sl} onClick={(r) => engine.clickSlot(i + 9, r)} />)}
